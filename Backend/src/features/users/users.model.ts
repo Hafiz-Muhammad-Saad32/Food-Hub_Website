@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
-import { UserTypes } from "../@types/user-types";
-import { number } from "zod";
+import { UserTypes } from "../../@types/user.type";
 
 const userSchema = new mongoose.Schema<UserTypes>(
   {

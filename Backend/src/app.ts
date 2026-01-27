@@ -5,7 +5,7 @@ import userRoutes from "./routes/user-routes";
 import adminRoutes from "./routes/admin-routes";
 import { connectingToMongoDB } from "./config/mongodb";
 import userLogger from "./middlewares/user-logger";
-import { checkJWT } from "./middlewares/auth";
+import { checkJWT } from "./features/auth/";
 import { checkRoles } from "./middlewares/roles-middleware";
 
 const app = express();

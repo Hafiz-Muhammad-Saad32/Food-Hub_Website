@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
-import userModel from "../models/user-models";
+import userModel from "./users.model";
 import {
   loginZodSchema,
   userZodSchema,
   updateUserZodSchema,
-} from "../schemas/user-Zod-Schema";
-import { comparePassword, hashing } from "../utils/bcrypt";
-import { generateJWT, jwtCampare } from "../utils/jwt";
+} from "./users.validation";
+import { comparePassword, hashing } from "../../utils/brycpt";
+import { generateJWT, jwtCampare } from "../../utils/jwt";
 
 interface UsersReqBody {
   userName: string;
