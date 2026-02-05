@@ -1,28 +1,64 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import FoodCard from "../components/FoodCard";
 import SearchBar from "../components/SearchBar";
-import { foodData, categories } from "../data/foodData";
+import { foodAPI } from "../services/api";
+
+// Categories constant
+const categories = [
+  { id: "popular", label: "Popular" },
+  { id: "vegetarian", label: "Vegetarian" },
+  { id: "non-vegetarian", label: "Non-Vegetarian" },
+  { id: "drinks", label: "Drinks" },
+  { id: "others", label: "Others" },
+];
 
 export default function Home({ addToCart }) {
+  const [foods, setFoods] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("popular");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+
+  // Fetch foods from backend
+  useEffect(() => {
+    const fetchFoods = async () => {
+      try {
+        setLoading(true);
+        const response = await foodAPI.getAllFoods();
+        setFoods(response.data.data || []);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching foods:", err);
+        setError("Failed to load foods. Please try again.");
+        setFoods([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFoods();
+  }, []);
 
   // Filter foods based on search and category
   const filteredFoods = useMemo(() => {
-    return foodData.filter((food) => {
-      const matchesSearch = food.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-        food.description
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase());
+    return foods.filter((food) => {
+      const matchesSearch =
+        (food.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (food.description || "").toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesCategory =
         selectedCategory === "all" || food.category === selectedCategory;
 
       return matchesSearch && matchesCategory;
     });
-  }, [searchTerm, selectedCategory]);
+  }, [foods, searchTerm, selectedCategory]);
+
+  const handleAddToCart = (food) => {
+    addToCart({
+      ...food,
+      id: food._id, // For backward compatibility with cart
+    });
+  };
 
   return (
     <div className="min-h-screen bg-light">
@@ -84,23 +120,45 @@ export default function Home({ addToCart }) {
             {searchTerm ? "Search Results" : "Our Menu"}
           </h2>
 
-          {filteredFoods.length > 0 ? (
+          {/* Loading State */}
+          {loading && (
+            <div className="text-center py-16">
+              <p className="text-2xl">⏳ Loading foods...</p>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && !loading && (
+            <div className="text-center py-16 bg-red-100 rounded-lg">
+              <p className="text-red-600 text-xl mb-4">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="btn-primary"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {/* Foods Grid */}
+          {!loading && !error && filteredFoods.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredFoods.map((food) => (
+              {filteredFoods.map((food, index) => (
                 <div
-                  key={food.id}
+                  key={food._id}
                   className="animate-fadeIn"
                   style={{
-                    animation: `fadeIn 0.5s ease-out ${
-                      filteredFoods.indexOf(food) * 0.05
-                    }s both`,
+                    animation: `fadeIn 0.5s ease-out ${index * 0.05}s both`,
                   }}
                 >
-                  <FoodCard food={food} onAddToCart={addToCart} />
+                  <FoodCard
+                    food={food}
+                    onAddToCart={() => handleAddToCart(food)}
+                  />
                 </div>
               ))}
             </div>
-          ) : (
+          ) : !loading && !error ? (
             <div className="text-center py-16">
               <p className="text-4xl mb-4">😔</p>
               <h3 className="text-2xl font-bold text-dark mb-2">
@@ -119,7 +177,7 @@ export default function Home({ addToCart }) {
                 Reset Filters
               </button>
             </div>
-          )}
+          ) : null}
         </div>
       </section>
 
@@ -134,7 +192,13 @@ export default function Home({ addToCart }) {
               <p className="text-lg mb-6 opacity-90">
                 Get 20% off on your first order with code: FOODHUB20
               </p>
-              <button className="bg-white text-primary px-8 py-3 rounded-lg font-bold text-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText("FOODHUB20");
+                  alert("Coupon code copied!");
+                }}
+                className="bg-white text-primary px-8 py-3 rounded-lg font-bold text-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+              >
                 Copy Code
               </button>
             </div>
@@ -148,7 +212,6 @@ export default function Home({ addToCart }) {
         <div className="container-custom">
           <h2 className="section-title">Why Choose Us?</h2>
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Feature 1 */}
             <div className="card p-6 text-center">
               <div className="text-5xl mb-4">⚡</div>
               <h3 className="text-xl font-bold text-dark mb-2">Fast Delivery</h3>
@@ -157,7 +220,6 @@ export default function Home({ addToCart }) {
               </p>
             </div>
 
-            {/* Feature 2 */}
             <div className="card p-6 text-center">
               <div className="text-5xl mb-4">✅</div>
               <h3 className="text-xl font-bold text-dark mb-2">
@@ -168,7 +230,6 @@ export default function Home({ addToCart }) {
               </p>
             </div>
 
-            {/* Feature 3 */}
             <div className="card p-6 text-center">
               <div className="text-5xl mb-4">💰</div>
               <h3 className="text-xl font-bold text-dark mb-2">

@@ -1,7 +1,7 @@
 import Food from "./foods.model";
 
 export const createFood = (data: any) => {
-    return Food.create(data);
+    return  Food.create(data);
 };
 
 export const getAllFoods = () => {

@@ -1,25 +1,13 @@
-import {Document} from "mongoose";
+import {foodType} from "../../@types/food.type";
 import mongoose from "mongoose";
-
-export interface foodType extends Document{
-    title: string,
-    description: string,
-    price: number,
-    catagory: string[],
-    quantity: number,
-    inStock: boolean,
-    image: string,
-    deletedAt: {}
-}
 
 const foodModel = new mongoose.Schema<foodType>(
     {
-        title: { type: String },
+        name: { type: String },
         description: { type: String },
         price: { type: Number },
-        quantity: { type: Number },
-        inStock: { type: Boolean },
-        catagory: { type: [String] },
+        rating: { type: Number, default: 0 },
+        category: { type: String },
         image: { type: String },
         deletedAt: {type: Date,default: null}
     },
@@ -28,4 +16,4 @@ const foodModel = new mongoose.Schema<foodType>(
     }
 )
 
-export default mongoose.model<foodType>("Foods", foodModel);
+export default mongoose.model<foodType>("foods", foodModel);

@@ -6,13 +6,14 @@ import {
     updateFoodById,
     deleteFoodById,
 } from "./foods.controller";
+import { checkJWT } from "../auth/auth.middleware";  
 
 const router = Router();
 
-router.post("/", addFood);
+router.post("/add", addFood);
 router.get("/", getAllFoods);
-router.get("/:id", getFoodById);
-router.patch("/:id", updateFoodById);
-router.delete("/:id", deleteFoodById);
+router.get("/getById/:id", getFoodById);
+router.patch("/update/:id",updateFoodById);
+router.delete("/delete/:id", deleteFoodById);
 
 export default router;

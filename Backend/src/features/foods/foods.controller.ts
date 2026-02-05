@@ -18,6 +18,7 @@ export const addFood = async (req: Request, res: Response) => {
         const food = await foodService.createFood(data);
 
         return res.status(200).json({
+            success: true,
             message: "Food added successfully",
             data: food,
         });
@@ -126,6 +127,12 @@ export const updateFoodById = async (req: Request, res: Response) => {
         if (!food) {
             return res.status(404).json({
                 message: "Food not found",
+            });
+        }
+
+        if(food?.deletedAt != null){
+            return res.status(404).json({
+                message: "Food has deleted",
             });
         }
 
