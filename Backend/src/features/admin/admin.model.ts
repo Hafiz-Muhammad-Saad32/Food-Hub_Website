@@ -1,19 +1,19 @@
 import mongoose from "mongoose";
-import { AdminTypes } from "../../@types/admin.types";
+import { UserTypes } from "../../@types/user.type";
 
-const adminSchema = new mongoose.Schema<AdminTypes>(
+const adminSchema = new mongoose.Schema<UserTypes>(
   {
-    adminName: { type: String, required: true },
+    name: { type: String, required: true },
     email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String, required: true },
-    age: { type: Number, min: 10, max: 60 },
-    role: { type: String, default: "admin" },
-    experience: { type: Number, required: true, min: 1 },
+    phone: { type: String },
+    role: { type: String, enum: ["user", "admin"], default: "user" },
+    experience: { type: Number, required: true, min: 1, max: 50 },
   },
   {
     timestamps: true,
     versionKey: false,
-  }
+  },
 );
 
-export default mongoose.model<AdminTypes>("AdminsCollections", adminSchema);
+export default mongoose.model<UserTypes>("Admin", adminSchema);

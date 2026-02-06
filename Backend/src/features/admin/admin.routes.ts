@@ -1,10 +1,17 @@
 import { Router } from "express";
-import { loginAdmin, registerAdmin, updateAdmin } from "./admin.controller";
-
+import { validate } from "../../middlewares/validate.middleware";
+import { loginZodSchema, userZodSchema } from "../users/users.validation";
+import {
+  getAllUsers,
+  getUser,
+} from "../admin/admin.controller";
 const route = Router();
 
-route.post("/admin/register", registerAdmin);
-route.post("/admin/login", loginAdmin);
-route.post("/admin/:adminId/update", updateAdmin);
+// route.post("/auth/login", validate(loginZodSchema), loginAdmin);
+// route.post("/auth/register", registerAdmin);
+
+route.get("/users", getAllUsers);
+route.get("/user/:userId", getUser);
+// route.delete("/user/harddelete/:userId", HardDeleteUser);
 
 export default route;

@@ -1,11 +1,11 @@
 import { Document } from "mongoose";
+import { Role } from "./role";
 
 export interface UserTypes extends Document {
-  userName: string;
+  name: string;
   email: string;
   password: string;
-  // age: number;
-  role: string;
-  skills: string[];
+  phone: string;
+  role: Role;
   experience: number;
 }

@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import { jwtCampare } from "../../utils/jwt";
+import { jwtCampare } from "../utils/jwt";
+import { AuthRequest } from "../@types/auth.request";
 
-export function checkJWT(req: Request, res: Response, next: NextFunction) {
+
+export function checkJWT(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) {

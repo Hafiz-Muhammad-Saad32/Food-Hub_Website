@@ -1,9 +1,15 @@
 import { Router } from "express";
-import { loginUser, registorUser } from "./users.controller";
+import { updateUser } from "./users.controller";
+import { validate } from "../../middlewares/validate.middleware";
+import {
+  userZodSchema,
+  loginZodSchema,
+  updateUserZodSchema,
+} from "./users.validation";
+import { checkJWT } from "../../middlewares/auth.middleware";
 
 const route = Router();
 
-route.post("/auth/register", registorUser);
-route.post("/auth/login", loginUser);
+route.put("/update/:userId", checkJWT, updateUser);
 
 export default route;

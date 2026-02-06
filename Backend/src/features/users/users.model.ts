@@ -3,17 +3,17 @@ import { UserTypes } from "../../@types/user.type";
 
 const userSchema = new mongoose.Schema<UserTypes>(
   {
-    userName: { type: String, required: true },
+    name: { type: String, required: true },
     email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String, required: true },
-    // age: { type: Number, min: 10, max: 60 },
-    role: { type: String, enum: ["admin", "user"], default: "user" },
-    experience: { type: Number, required: true, min: 1 },
+    phone: { type: String },
+    role: { type: String, enum: ["user", "admin"], default: "user"},
+    experience: { type: Number, required: true, min: 1, max: 50 },
   },
   {
     timestamps: true,
     versionKey: false,
-  }
+  },
 );
 
-export default mongoose.model<UserTypes>("User", userSchema);
+export default mongoose.model<UserTypes>("Users", userSchema);

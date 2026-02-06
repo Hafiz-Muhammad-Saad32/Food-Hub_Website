@@ -18,6 +18,7 @@ import ForgotPassword from "./auth/ForgotPassword";
 // Cart & Admin
 import Cart from "./cart/Cart";
 import FoodForm from "./admin/FoodForm";
+import AdminLogin from "./auth/adminLogin";
 
 function App() {
   // Global state for cart items and foods (backend-ready)
@@ -77,6 +78,7 @@ function App() {
             />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/admin" element={<AdminLogin />} />
 
             {/* Auth Routes */}
             <Route path="/login" element={<Login />} />

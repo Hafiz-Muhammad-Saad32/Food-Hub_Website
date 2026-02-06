@@ -1,59 +1,70 @@
 import { Request, Response } from "express";
 import adminModel from "./admin.model";
 import {
-  adminValidators,
-  loginAdminValidators,
-  updateAdminValidators,
-} from "./admin.validation";
+  loginZodSchema,
+  updateUserZodSchema,
+  userZodSchema,
+} from "../users/users.validation";
 import { comparePassword, hashing } from "../../utils/brycpt";
 import { generateJWT, jwtCampare } from "../../utils/jwt";
+import { UserTypes } from "../../@types/user.type";
+import usersModel from "../users/users.model";
 
-interface AdminReqBody {
-  userName: string;
-  email: string;
-  password: string;
-  role: string;
-  experience: number;
-  skills: string[];
-}
+// export async function registerAdmin(req: Request, res: Response) {
+//   try {
+//     const { success, data, error } = userZodSchema.safeParse(req.body);
 
-export async function registerAdmin(req: Request, res: Response) {
+//     if (!success) {
+//       return res.status(400).json({
+//         success: false,
+//         message: error.issues[0].message,
+//       });
+//     }
+
+//     const isFound = await adminModel.findOne({ email: data.email });
+//     if (isFound) {
+//       return res.status(400).json({
+//         success: false,
+//         message:
+//           "admin already exits with this email! Please try with different email",
+//       });
+//     }
+
+//     const hashedPassword = await hashing(data.password);
+
+//     const admin = new adminModel({
+//       name: data.name,
+//       email: data.email,
+//       password: hashedPassword,
+//       role: data.role,
+//       phone: data.phone,
+//       experience: data.experience,
+//     });
+
+//     const newAdmin = await admin.save();
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Admin created successfully!",
+//       data: newAdmin,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Internal server error" + error,
+//     });
+//   }
+// }
+
+export async function getAllUsers(req: Request, res: Response) {
   try {
-    const { success, data, error } = adminValidators.safeParse(req.body);
-
-    if (!success) {
-      return res.status(400).json({
-        success: false,
-        message: error.issues[0].message,
-      });
-    }
-
-    const isFound = await adminModel.findOne({ email: data.email });
-    if (isFound) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "admin already exits with this email! Please try with different email",
-      });
-    }
-
-    const hashedPassword = await hashing(data.password);
-
-    const admin = new adminModel({
-      adminName: data.adminName,
-      email: data.email,
-      experience: data.experience,
-      skills: data.skills,
-      password: hashedPassword,
-      role: data.role,
-    });
-
-    const newAdmin = await admin.save();
+    const userList = await usersModel.find();
 
     res.status(200).json({
       success: true,
-      message: "Admin created successfully!",
-      data: newAdmin,
+      message: "All users data fetched successfully!",
+      data: userList,
     });
   } catch (error) {
     res.status(500).json({
@@ -63,61 +74,41 @@ export async function registerAdmin(req: Request, res: Response) {
   }
 }
 
-export const loginAdmin = async (req: Request, res: Response) => {
-  try {
-    const { success, data, error } = loginAdminValidators.safeParse(req.body);
-
-    if (!success) {
-      return res.status(400).json({
-        success: false,
-        message: error.issues[0].message,
-      });
-    }
-
-    const isFound = await adminModel.findOne({ email: data.email });
-    if (!isFound) {
-      return res.status(404).json({
-        success: false,
-        message: "Admin not found",
-      });
-    }
-
-    const isCorrect = await comparePassword(data.password, isFound.password);
-
-    if (!isCorrect) {
-      return res.status(400).json({
-        success: false,
-        message: "Password is miss matched",
-      });
-    }
-
-    const payload = {
-      name: isFound.adminName,
-      email: isFound.email,
-      role: isFound.role,
-    };
-
-    const accessToken = generateJWT(payload);
-
-    res.status(200).json({
-      success: true,
-      message: "Admin login successfully!",
-      accessToken,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Internal server error" + error,
-    });
-  }
-};
-
-export async function updateAdmin(
-  req: Request<{ adminId: string }, {}, AdminReqBody>,
+export async function getUser(
+  req: Request<{ userId: string }, {}, UserTypes>,
   res: Response,
 ) {
   try {
-    const { success, data, error } = updateAdminValidators.safeParse(req.body);
+    const { userId } = req.params;
+
+    const user = await usersModel.findOne({ _id: userId });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User founded successfully",
+      data: user,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Internal server error" + error,
+    });
+  }
+}
+
+export async function updateAdmin(
+  req: Request<{ adminId: string }, {}, UserTypes>,
+  res: Response,
+) {
+  try {
+    const { success, data, error } = updateUserZodSchema.safeParse(req.body);
 
     if (!success) {
       return res.status(400).json({
