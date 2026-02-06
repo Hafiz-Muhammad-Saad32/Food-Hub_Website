@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
+
 import api from "../api/axios";
 import {
   ShieldCheck,
@@ -24,16 +26,52 @@ export default function AdminLogin() {
   //   return Object.keys(newErrors).length === 0;
   // };
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   // if (!validateForm()) return;
+  //   setLoading(true);
+
+  //   try {
+  //     const response = await api.post("/auth/admin/login", { email, password });
+  //     const { accessToken } = response.data;
+
+  //     const decoded = jwtDecode.default(accessToken);
+
+  //     console.log("decoded ");
+
+  //     if (decoded.role !== "admin") {
+  //       setErrors({
+  //         api: "Access Denied: You do not have administrative privileges.",
+  //       });
+  //       return;
+  //     }
+
+  //     localStorage.setItem("authToken", accessToken);
+  //     localStorage.setItem("userRole", decoded.role);
+  //     navigate("/admin/foods");
+  //   } catch (error) {
+  //     setErrors({
+  //       api: error.response?.data?.message || "Admin authentication failed.",
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // if (!validateForm()) return;
     setLoading(true);
 
     try {
-      const response = await api.post("/admin/auth/login", { email, password });
-      const { accessToken, user } = response.data;
+      const response = await api.post("/auth/admin/login", { email, password });
+      const { accessToken } = response.data;
 
-      if (user.role !== "admin") {
+      console.log(response.data);
+
+      const decoded = jwtDecode(accessToken);
+      console.log(decoded);
+
+      if (decoded.role !== "admin") {
         setErrors({
           api: "Access Denied: You do not have administrative privileges.",
         });
@@ -41,9 +79,11 @@ export default function AdminLogin() {
       }
 
       localStorage.setItem("authToken", accessToken);
-      localStorage.setItem("userRole", "admin");
-      navigate("/admin/dashboard");
+      localStorage.setItem("userRole", decoded.role);
+
+      navigate("/admin/foods");
     } catch (error) {
+      console.error(error); // optional: log the full error for debugging
       setErrors({
         api: error.response?.data?.message || "Admin authentication failed.",
       });

@@ -57,51 +57,6 @@ import usersModel from "../users/users.model";
 //   }
 // }
 
-export async function getAllUsers(req: Request, res: Response) {
-  try {
-    const userList = await usersModel.find();
-
-    res.status(200).json({
-      success: true,
-      message: "All users data fetched successfully!",
-      data: userList,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Internal server error" + error,
-    });
-  }
-}
-
-export async function getUser(
-  req: Request<{ userId: string }, {}, UserTypes>,
-  res: Response,
-) {
-  try {
-    const { userId } = req.params;
-
-    const user = await usersModel.findOne({ _id: userId });
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "User founded successfully",
-      data: user,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Internal server error" + error,
-    });
-  }
-}
 
 export async function updateAdmin(
   req: Request<{ adminId: string }, {}, UserTypes>,

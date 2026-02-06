@@ -36,7 +36,7 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      const response = await api.post("/auth/register", {
+      const response = await api.post("/auth/user/register", {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
@@ -45,7 +45,11 @@ export default function Signup() {
         experience: Number(formData.experience),
       });
 
-      navigate("/login");
+      // Store user info in localStorage
+      localStorage.setItem("user", JSON.stringify(response.data.role));
+      handleLogin(response.data); // update App state
+
+      navigate("/"); // redirect to home page
     } catch (error) {
       const message = error.response?.data?.errors || {
         general: "Signup failed",

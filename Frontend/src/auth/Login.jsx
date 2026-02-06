@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { Mail, Lock, LogIn, ArrowRight } from "lucide-react"; // npm install lucide-react
+import { jwtDecode } from "jwt-decode";
 
-export default function Login() {
+export default function Login({ handleLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
@@ -17,14 +18,24 @@ export default function Login() {
 
     try {
       // FIXED: Changed endpoint to /auth/login and payload to use state variables
-      const response = await api.post("/auth/login", {
+      const response = await api.post("/auth/user/login", {
         email,
         password,
       });
 
       const { accessToken } = response.data;
-      localStorage.setItem("authToken", accessToken);
+         const decoded = jwtDecode(accessToken);
+
+         console.log(decoded);
+         
       
+      localStorage.setItem("authToken", accessToken);
+      localStorage.setItem("userRole", decoded.role);
+      
+      console.log(decoded);
+      
+        handleLogin(response.data); // update App state
+
       navigate("/");
     } catch (error) {
       const message = error.response?.data?.message || "Login failed. Please check your credentials.";

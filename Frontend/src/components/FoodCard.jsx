@@ -6,7 +6,6 @@ export default function FoodCard({ food, onAddToCart }) {
   const handleAddToCart = () => {
     onAddToCart(food);
     setIsAdded(true);
-    // Reset after 2 seconds
     setTimeout(() => setIsAdded(false), 2000);
   };
 
@@ -16,16 +15,16 @@ export default function FoodCard({ food, onAddToCart }) {
       <div className="relative overflow-hidden h-48 bg-gray-200">
         <img
           src={food.image}
-          alt={food.name}
+          alt={food.name || "Food"}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
         />
         {/* Category Badge */}
         <div className="absolute top-3 right-3 bg-primary text-white px-3 py-1 rounded-full text-xs font-semibold uppercase">
-          {food.category}
+          {food.category || "N/A"}
         </div>
         {/* Rating Badge */}
         <div className="absolute top-3 left-3 bg-yellow-400 text-dark px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-          ⭐ {food.rating}
+          ⭐ {food.rating || 0}
         </div>
       </div>
 
@@ -33,18 +32,18 @@ export default function FoodCard({ food, onAddToCart }) {
       <div className="p-4 flex-grow flex flex-col">
         {/* Title */}
         <h3 className="text-lg font-bold text-dark mb-1 line-clamp-2">
-          {food.name}
+          {food.name || "Unnamed Food"}
         </h3>
 
         {/* Description */}
         <p className="text-sm text-gray-600 mb-3 line-clamp-2 flex-grow">
-          {food.description}
+          {food.description || "No description"}
         </p>
 
         {/* Price */}
         <div className="mb-4">
           <span className="text-2xl font-bold text-primary">
-            ${food.price.toFixed(2)}
+            ${food.price?.toFixed(2) || "0.00"}
           </span>
         </div>
 

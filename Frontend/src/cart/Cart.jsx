@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import AddressManager from "../components/AddressManager";
+import { orderAPI } from "../services/api";
 
 export default function Cart({
   cartItems,
@@ -7,7 +9,10 @@ export default function Cart({
   updateCartQuantity,
   clearCart,
 }) {
+  const [showAddressManager, setShowAddressManager] = useState(false);
   const [showOrderForm, setShowOrderForm] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [selectedAddressDetails, setSelectedAddressDetails] = useState(null);
 
   // Calculate total price
   const totalPrice = cartItems.reduce(
@@ -36,6 +41,15 @@ export default function Cart({
     );
   }
 
+  const handleProceedToOrder = () => {
+    if (!selectedAddressId) {
+      alert("❌ Please select or add a delivery address first!");
+      return;
+    }
+    setShowOrderForm(true);
+    setShowAddressManager(false);
+  };
+
   return (
     <div className="min-h-screen bg-light py-12">
       <div className="container-custom">
@@ -47,15 +61,16 @@ export default function Cart({
           </p>
         </div>
 
-        {/* Cart Content */}
+        {/* Main Cart View */}
         {!showOrderForm ? (
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Cart Items */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-xl shadow-card p-6 mb-6">
+            <div className="lg:col-span-2 space-y-6">
+              {/* Cart Items Section */}
+              <div className="bg-white rounded-xl shadow-card p-6">
                 {cartItems.map((item) => (
                   <div
-                    key={item.id}
+                    key={item._id}
                     className="flex gap-6 mb-6 pb-6 border-b border-gray-200 last:border-0 last:mb-0 last:pb-0 animate-fadeIn"
                   >
                     {/* Image */}
@@ -64,13 +79,16 @@ export default function Cart({
                         src={item.image}
                         alt={item.name}
                         className="w-full h-full object-cover rounded-lg"
+                        onError={(e) => {
+                          e.target.src = "https://via.placeholder.com/96?text=Food";
+                        }}
                       />
                     </div>
 
                     {/* Item Details */}
                     <div className="flex-grow">
                       <h3 className="font-bold text-dark mb-1">{item.name}</h3>
-                      <p className="text-gray-600 text-sm mb-2">
+                      <p className="text-gray-600 text-sm mb-2 line-clamp-2">
                         {item.description}
                       </p>
                       <p className="text-primary font-bold">
@@ -81,16 +99,18 @@ export default function Cart({
                     {/* Quantity & Remove */}
                     <div className="flex flex-col justify-between items-end">
                       <button
-                        onClick={() => removeFromCart(item.id)}
-                        className="text-red-500 hover:text-red-700 transition-colors duration-300 font-medium"
+                        onClick={() => removeFromCart(item._id)}
+                        className="text-red-500 hover:text-red-700 transition-colors duration-300 font-medium text-lg"
                       >
                         ✕
                       </button>
                       <div className="flex items-center gap-3 border-2 border-gray-200 rounded-lg px-3 py-1">
                         <button
-                          onClick={() =>
-                            updateCartQuantity(item.id, item.quantity - 1)
-                          }
+                          onClick={() => {
+                            if (item.quantity > 1) {
+                              updateCartQuantity(item._id, item.quantity - 1);
+                            }
+                          }}
                           className="text-lg font-bold text-primary hover:text-secondary transition-colors duration-300"
                         >
                           −
@@ -100,7 +120,7 @@ export default function Cart({
                         </span>
                         <button
                           onClick={() =>
-                            updateCartQuantity(item.id, item.quantity + 1)
+                            updateCartQuantity(item._id, item.quantity + 1)
                           }
                           className="text-lg font-bold text-primary hover:text-secondary transition-colors duration-300"
                         >
@@ -127,9 +147,50 @@ export default function Cart({
                   <button className="btn-primary">Apply</button>
                 </div>
               </div>
+
+              {/* Address Selection Section */}
+              <div className="bg-white rounded-xl shadow-card p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold text-dark">📍 Delivery Address</h3>
+                  <button
+                    onClick={() => setShowAddressManager(!showAddressManager)}
+                    className="btn-primary text-sm px-4 py-2"
+                  >
+                    {showAddressManager ? "Hide" : "+ Add Address"}
+                  </button>
+                </div>
+
+                {/* Address Manager Form */}
+                {showAddressManager && (
+                  <div className="mb-6 p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
+                    <AddressManager
+                      onAddressSelect={(id, details) => {
+                        setSelectedAddressId(id);
+                        setSelectedAddressDetails(details);
+                      }}
+                      selectedAddressId={selectedAddressId}
+                    />
+                  </div>
+                )}
+
+                {/* Selected Address Display */}
+                {selectedAddressDetails && (
+                  <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 mb-1">
+                      <strong>✅ Selected Address:</strong>
+                    </p>
+                    <p className="text-dark font-medium">
+                      {selectedAddressDetails.street}, {selectedAddressDetails.city}
+                    </p>
+                    <p className="text-gray-600 text-sm">
+                      📱 {selectedAddressDetails.phone}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Order Summary */}
+            {/* Order Summary Sidebar */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-xl shadow-card p-6 sticky top-24">
                 <h3 className="text-xl font-bold text-dark mb-6">
@@ -166,7 +227,7 @@ export default function Cart({
 
                 {/* Buttons */}
                 <button
-                  onClick={() => setShowOrderForm(true)}
+                  onClick={handleProceedToOrder}
                   className="w-full btn-primary mb-3"
                 >
                   Proceed to Order
@@ -191,9 +252,13 @@ export default function Cart({
         ) : (
           // Order Form
           <OrderForm
+            cartItems={cartItems}
             totalPrice={totalPrice}
             totalItems={totalItems}
+            selectedAddressId={selectedAddressId}
+            selectedAddressDetails={selectedAddressDetails}
             onBackToCart={() => setShowOrderForm(false)}
+            clearCart={clearCart}
           />
         )}
       </div>
@@ -202,64 +267,68 @@ export default function Cart({
 }
 
 // Order Form Component
-function OrderForm({ totalPrice, totalItems, onBackToCart }) {
+function OrderForm({
+  cartItems,
+  totalPrice,
+  totalItems,
+  selectedAddressId,
+  selectedAddressDetails,
+  onBackToCart,
+  clearCart,
+}) {
   const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    address: "",
     paymentMethod: "card",
     specialInstructions: "",
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [orderId, setOrderId] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
-    }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Phone number is required";
-    } else if (!/^\d{10,}$/.test(formData.phone.replace(/\D/g, ""))) {
-      newErrors.phone = "Invalid phone number";
-    }
-
-    if (!formData.address.trim()) {
-      newErrors.address = "Delivery address is required";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validateForm()) return;
+    if (!selectedAddressId) {
+      alert("❌ Error: No address selected! Please go back and select an address.");
+      return;
+    }
 
     setLoading(true);
 
-    // TODO: BACKEND API CALL HERE
-    // Example: const response = await fetch("/api/orders", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify(formData)
-    // });
+    try {
+      // Prepare order data
+      const orderData = {
+        items: cartItems.map((item) => ({
+          food: item._id,
+          quantity: item.quantity,
+        })),
+        address: selectedAddressId,
+        paymentMethod: formData.paymentMethod,
+        specialInstructions: formData.specialInstructions,
+      };
 
-    // Simulate API delay
-    setTimeout(() => {
-      console.log("Order placed:", formData);
+      // Call backend API
+      const response = await orderAPI.createOrder(orderData);
+      setOrderId(response.data.data._id);
       setOrderPlaced(true);
+      clearCart();
+      alert("✅ Order placed successfully!");
+    } catch (err) {
+      console.error("Error placing order:", err);
+      const errorMessage =
+        err.response?.data?.message || "Failed to place order. Please try again.";
+      alert(`❌ Error: ${errorMessage}`);
+      setErrors({
+        submit: errorMessage,
+      });
+    } finally {
       setLoading(false);
-    }, 2000);
+    }
   };
 
   if (orderPlaced) {
@@ -277,16 +346,17 @@ function OrderForm({ totalPrice, totalItems, onBackToCart }) {
 
           <div className="bg-gray-100 rounded-lg p-6 text-left mb-8">
             <p className="text-sm text-gray-600 mb-2">
-              <strong>Order ID:</strong> #ORD-{Math.random().toString(36).substr(2, 9).toUpperCase()}
+              <strong>Order ID:</strong> #{orderId?.slice(-9)}
+            </p>
+            <p className="text-sm text-gray-600 mb-2">
+              <strong>Delivery Address:</strong> {selectedAddressDetails?.street},{" "}
+              {selectedAddressDetails?.city}
             </p>
             <p className="text-sm text-gray-600 mb-2">
               <strong>Total Items:</strong> {totalItems}
             </p>
             <p className="text-lg font-bold text-primary">
               <strong>Total:</strong> ${(totalPrice + 2.99 + totalPrice * 0.1).toFixed(2)}
-            </p>
-            <p className="text-sm text-gray-600 mt-4">
-              <strong>Delivery Address:</strong> {formData.address}
             </p>
           </div>
 
@@ -297,12 +367,6 @@ function OrderForm({ totalPrice, totalItems, onBackToCart }) {
             >
               Back to Home
             </button>
-            <button
-              onClick={() => (window.location.href = "/cart")}
-              className="w-full btn-outline"
-            >
-              View Orders
-            </button>
           </div>
         </div>
       </div>
@@ -310,71 +374,30 @@ function OrderForm({ totalPrice, totalItems, onBackToCart }) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       <div className="bg-white rounded-xl shadow-card p-8">
-        <h2 className="text-2xl font-bold text-dark mb-8">📦 Delivery Details</h2>
+        <h2 className="text-2xl font-bold text-dark mb-8">📦 Complete Your Order</h2>
+
+        {errors.submit && (
+          <div className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            ❌ {errors.submit}
+          </div>
+        )}
+
+        {/* Selected Address Info */}
+        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 mb-6">
+          <p className="text-sm text-gray-600 mb-1">
+            <strong>📍 Delivery To:</strong>
+          </p>
+          <p className="text-dark font-medium">
+            {selectedAddressDetails?.street}, {selectedAddressDetails?.city}
+          </p>
+          <p className="text-gray-600 text-sm">
+            📱 {selectedAddressDetails?.phone}
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-dark mb-2">
-              Full Name *
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="John Doe"
-              className={`input-field ${
-                errors.name ? "border-red-500 focus:border-red-500" : ""
-              }`}
-            />
-            {errors.name && (
-              <p className="text-red-500 text-sm mt-1">{errors.name}</p>
-            )}
-          </div>
-
-          {/* Phone */}
-          <div>
-            <label className="block text-sm font-medium text-dark mb-2">
-              Phone Number *
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              placeholder="+1 (555) 123-4567"
-              className={`input-field ${
-                errors.phone ? "border-red-500 focus:border-red-500" : ""
-              }`}
-            />
-            {errors.phone && (
-              <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
-            )}
-          </div>
-
-          {/* Address */}
-          <div>
-            <label className="block text-sm font-medium text-dark mb-2">
-              Delivery Address *
-            </label>
-            <textarea
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              placeholder="123 Main St, Apt 4B, City, Country 12345"
-              rows={3}
-              className={`input-field resize-none ${
-                errors.address ? "border-red-500 focus:border-red-500" : ""
-              }`}
-            />
-            {errors.address && (
-              <p className="text-red-500 text-sm mt-1">{errors.address}</p>
-            )}
-          </div>
-
           {/* Payment Method */}
           <div>
             <label className="block text-sm font-medium text-dark mb-2">
@@ -384,7 +407,7 @@ function OrderForm({ totalPrice, totalItems, onBackToCart }) {
               name="paymentMethod"
               value={formData.paymentMethod}
               onChange={handleChange}
-              className="input-field"
+              className="input-field w-full"
             >
               <option value="card">💳 Credit/Debit Card</option>
               <option value="wallet">💰 Digital Wallet</option>
@@ -404,7 +427,7 @@ function OrderForm({ totalPrice, totalItems, onBackToCart }) {
               onChange={handleChange}
               placeholder="e.g., Extra spicy, no onions, etc."
               rows={3}
-              className="input-field resize-none"
+              className="input-field resize-none w-full"
             />
           </div>
 
