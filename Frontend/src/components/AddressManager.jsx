@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { orderAPI } from "../services/api";
+import { orderAPI, addressAPI } from "../services/api";
 
 export default function AddressManager({ onAddressSelect, selectedAddressId }) {
   const [addresses, setAddresses] = useState([]);
@@ -22,7 +22,7 @@ export default function AddressManager({ onAddressSelect, selectedAddressId }) {
   const fetchAddresses = async () => {
     try {
       setLoading(true);
-      const response = await orderAPI.getUserAddresses();
+      const response = await addressAPI.getUserAddresses();
       setAddresses(response.data.data || []);
     } catch (err) {
       console.error("Error fetching addresses:", err);
@@ -55,11 +55,11 @@ export default function AddressManager({ onAddressSelect, selectedAddressId }) {
     try {
       if (editingId) {
         // Update
-        await orderAPI.updateAddress(editingId, formData);
+        await addressAPI.updateAddress(editingId, formData);
         alert("✅ Address updated successfully!");
       } else {
         // Create
-        await orderAPI.createAddress(formData);
+        await addressAPI.createAddress(formData);
         alert("✅ Address added successfully!");
       }
       resetForm();
@@ -87,7 +87,7 @@ export default function AddressManager({ onAddressSelect, selectedAddressId }) {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this address?")) {
       try {
-        await orderAPI.deleteAddress(id);
+        await addressAPI.deleteAddress(id);
         alert("✅ Address deleted successfully!");
         fetchAddresses();
       } catch (err) {

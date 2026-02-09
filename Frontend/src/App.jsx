@@ -61,13 +61,16 @@ function App() {
 
   // Function to add item to cart
   const addToCart = (food) => {
-    const existingItem = cartItems.find((item) => item.id === food.id);
+    const existingItem = cartItems.find((item) => item._id === food._id);
     if (existingItem) {
       setCartItems(
         cartItems.map((item) =>
           item.id === food.id ? { ...item, quantity: item.quantity + 1 } : item,
         ),
-      );
+          item._id === food._id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        )
     } else {
       setCartItems([...cartItems, { ...food, quantity: 1 }]);
     }
@@ -75,7 +78,7 @@ function App() {
 
   // Function to remove item from cart
   const removeFromCart = (foodId) => {
-    setCartItems(cartItems.filter((item) => item.id !== foodId));
+    setCartItems(cartItems.filter((item) => item._id !== foodId));
   };
 
   // Function to update item quantity in cart
@@ -88,7 +91,8 @@ function App() {
       cartItems.map((item) =>
         item.id === foodId ? { ...item, quantity } : item,
       ),
-    );
+        item._id === foodId ? { ...item, quantity } : item
+      )
   };
 
   // Function to clear cart
