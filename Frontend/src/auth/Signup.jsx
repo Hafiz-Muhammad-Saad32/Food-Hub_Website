@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../api/axios";
+// import api from "../api/axios";
+import { apiClient } from "../services/api";
+
 import {
   User,
   Mail,
@@ -23,6 +25,8 @@ export default function Signup() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [serverError, setServerError] = useState("");
+
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -36,7 +40,7 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      const response = await api.post("/auth/user/register", {
+      const response = await apiClient.post("/auth/user/register", {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
@@ -46,15 +50,33 @@ export default function Signup() {
       });
 
       // Store user info in localStorage
-      localStorage.setItem("user", JSON.stringify(response.data.role));
-      handleLogin(response.data); // update App state
+      localStorage.setItem("userSignUpData", JSON.stringify(response.data.data));
 
-      navigate("/"); // redirect to home page
+      console.log("user created ", response.data.data);
+
+      navigate("/login"); // redirect to home page
     } catch (error) {
-      const message = error.response?.data?.errors || {
-        general: "Signup failed",
-      };
-      setErrors(message);
+      const data = error?.response?.data;
+
+      // 🟥 ZOD ERRORS
+      if (data?.errors) {
+        const fieldErrors = {};
+
+        data.errors.forEach((err) => {
+          const fieldName = err.path[0]; // email, password etc
+          fieldErrors[fieldName] = err.message;
+        });
+
+        setErrors(fieldErrors);
+        setServerError("");
+        // console.log(errors);
+      }
+
+      // 🟥 SERVER ERROR
+      else if (data?.message) {
+        setServerError(data.message);
+        setErrors({});
+      }
     } finally {
       setLoading(false);
     }
@@ -83,6 +105,15 @@ export default function Signup() {
           </div>
 
           <form onSubmit={handleSubmit} className="px-8 pb-10 space-y-5">
+            {/* Server error */}
+            {serverError && (
+              <div className="mt-2">
+                <p className="bg-red-100 text-red-700 border border-red-300 px-3 py-2 rounded-md shadow-sm font-medium">
+                  {serverError}
+                </p>
+              </div>
+            )}
+
             {/* Grid Layout for compact view */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Full Name */}

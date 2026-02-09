@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 
-import api from "../api/axios";
+// import api from "../api/axios";
+import { apiClient } from "../services/api";
+
 import {
   ShieldCheck,
   Lock,
@@ -63,7 +65,10 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      const response = await api.post("/auth/admin/login", { email, password });
+      const response = await apiClient.post("/auth/admin/login", {
+        email,
+        password,
+      });
       const { accessToken } = response.data;
 
       console.log(response.data);
