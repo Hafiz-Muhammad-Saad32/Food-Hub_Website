@@ -1,12 +1,24 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { jwtDecode } from "jwt-decode";
 
 export default function Navbar({ cartCount, user, handleLogout }) {
+  // console.log(user.name);
+
   return (
     <nav className="bg-white shadow p-4 flex justify-between items-center">
-      <Link to="/" className="font-bold text-xl">
-        FoodHub
-      </Link>
+      <div className="bg-red-4 flex items-center gap-10">
+        <Link to="/" className="font-bold text-2xl">
+          FoodHub
+        </Link>
+
+        <Link to="/about" className="font-bold underline">
+          About Us
+        </Link>
+        <Link to="/contact" className="font-bold underline">
+          Contact
+        </Link>
+      </div>
 
       <div className="flex items-center gap-4">
         <Link to="/cart" className="relative">

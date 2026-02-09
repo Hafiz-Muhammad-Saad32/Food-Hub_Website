@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import FoodCard from "../components/FoodCard";
 import SearchBar from "../components/SearchBar";
-import { foodAPI } from "../services/api";
-import api from "../api/axios"
+import { foodAPI, cartAPI } from "../services/api";
+// import api from "../api/axios";
+
+import { useNavigate } from "react-router-dom";
 
 // Categories constant
 const categories = [
@@ -13,12 +15,14 @@ const categories = [
   { id: "others", label: "Others" },
 ];
 
-export default function Home({ addToCart }) {
+export default function Home({ addToCart, user }) {
   const [foods, setFoods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+
+  const navigate = useNavigate();
 
   // Fetch foods from backend
   useEffect(() => {
@@ -45,7 +49,9 @@ export default function Home({ addToCart }) {
     return foods.filter((food) => {
       const matchesSearch =
         (food.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (food.description || "").toLowerCase().includes(searchTerm.toLowerCase());
+        (food.description || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
 
       const matchesCategory =
         selectedCategory === "all" || food.category === selectedCategory;
@@ -54,25 +60,23 @@ export default function Home({ addToCart }) {
     });
   }, [foods, searchTerm, selectedCategory]);
 
-  // const handleAddToCart = (food) => {
-  //   addToCart({
-  //     ...food,
-  //     id: food._id, // For backward compatibility with cart
-  //   });
-  // };
+  const handleAddToCart = async (food) => {
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        alert("Please login first");
+        return;
+      }
 
-    const handleAddToCart = (food) => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (!user) {
-      alert("Please login first to add items to cart.");
-      navigate("/login"); // redirect to login
-      return;
+      // userId ko send karne ki zarurat nahi, server JWT se le lega
+      await cartAPI.addToCart(food._id, 1);
+
+      // fetch cart if you have cart state
+      alert(`${food.name} added to cart!`);
+    } catch (err) {
+      console.error("Add to cart error:", err);
+      alert("Failed to add to cart");
     }
-
-    addToCart({
-      ...food,
-      id: food._id,
-    });
   };
 
   return (
@@ -99,7 +103,9 @@ export default function Home({ addToCart }) {
       {/* Category Filter Section */}
       <section className="py-8 bg-white shadow-card">
         <div className="container-custom">
-          <h2 className="text-2xl font-bold text-dark mb-6">Browse Categories</h2>
+          <h2 className="text-2xl font-bold text-dark mb-6">
+            Browse Categories
+          </h2>
           <div className="flex flex-wrap gap-3 md:gap-4">
             <button
               onClick={() => setSelectedCategory("all")}
@@ -166,9 +172,14 @@ export default function Home({ addToCart }) {
                     animation: `fadeIn 0.5s ease-out ${index * 0.05}s both`,
                   }}
                 >
-                  <FoodCard
+                  {/* <FoodCard
                     food={food}
                     onAddToCart={() => handleAddToCart(food)}
+                  /> */}
+                  <FoodCard
+                    key={food._id}
+                    food={food}
+                    onAddToCart={handleAddToCart} // ye pass kar do
                   />
                 </div>
               ))}
@@ -229,7 +240,9 @@ export default function Home({ addToCart }) {
           <div className="grid md:grid-cols-3 gap-8">
             <div className="card p-6 text-center">
               <div className="text-5xl mb-4">⚡</div>
-              <h3 className="text-xl font-bold text-dark mb-2">Fast Delivery</h3>
+              <h3 className="text-xl font-bold text-dark mb-2">
+                Fast Delivery
+              </h3>
               <p className="text-gray-600">
                 Get your food delivered hot and fresh within 30 minutes!
               </p>
@@ -247,9 +260,7 @@ export default function Home({ addToCart }) {
 
             <div className="card p-6 text-center">
               <div className="text-5xl mb-4">💰</div>
-              <h3 className="text-xl font-bold text-dark mb-2">
-                Best Prices
-              </h3>
+              <h3 className="text-xl font-bold text-dark mb-2">Best Prices</h3>
               <p className="text-gray-600">
                 Enjoy discounts and special offers on bulk orders
               </p>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../api/axios";
+// import api from "../api/axios";
+import { apiClient } from "../services/api";
 import { Mail, Lock, LogIn, ArrowRight } from "lucide-react"; // npm install lucide-react
 import { jwtDecode } from "jwt-decode";
 
@@ -13,32 +14,34 @@ export default function Login({ handleLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     setLoading(true);
 
     try {
       // FIXED: Changed endpoint to /auth/login and payload to use state variables
-      const response = await api.post("/auth/user/login", {
+      const response = await apiClient.post("/auth/user/login", {
         email,
         password,
       });
 
       const { accessToken } = response.data;
-         const decoded = jwtDecode(accessToken);
+      const decoded = jwtDecode(accessToken);
 
-         console.log(decoded);
-         
-      
+      // console.log("decoded ", decoded);
+      // console.log("response ", response);
+
       localStorage.setItem("authToken", accessToken);
       localStorage.setItem("userRole", decoded.role);
-      
-      console.log(decoded);
-      
-        handleLogin(response.data); // update App state
+
+      handleLogin(response.data.user); // update App state
 
       navigate("/");
     } catch (error) {
-      const message = error.response?.data?.message || "Login failed. Please check your credentials.";
+     console.log(error);
+     
+      const message =
+        error.response?.data?.message ||
+        "Login failed. Please check your credentials.";
       setErrors({ api: message });
     } finally {
       setLoading(false);
@@ -59,8 +62,12 @@ export default function Login({ handleLogin }) {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white text-3xl mb-4 shadow-lg shadow-indigo-200">
               🍽️
             </div>
-            <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Welcome Back</h2>
-            <p className="mt-2 text-gray-500 font-medium">Please enter your details to sign in.</p>
+            <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+              Welcome Back
+            </h2>
+            <p className="mt-2 text-gray-500 font-medium">
+              Please enter your details to sign in.
+            </p>
           </div>
 
           {/* API Error Message */}
@@ -73,7 +80,9 @@ export default function Login({ handleLogin }) {
           <form onSubmit={handleSubmit} className="px-8 pb-10 space-y-5">
             {/* Email Field */}
             <div className="space-y-1">
-              <label className="text-sm font-semibold text-gray-700 ml-1">Email Address</label>
+              <label className="text-sm font-semibold text-gray-700 ml-1">
+                Email Address
+              </label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
                   <Mail size={18} />
@@ -86,14 +95,19 @@ export default function Login({ handleLogin }) {
                   className={`w-full pl-10 pr-4 py-3 bg-gray-50 border-2 rounded-xl outline-none transition-all duration-200 }`}
                 />
               </div>
-            
             </div>
 
             {/* Password Field */}
             <div className="space-y-1">
               <div className="flex justify-between items-center ml-1">
-                <label className="text-sm font-semibold text-gray-700">Password</label>
-                <Link to="/forgot-password" size="sm" className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors">
+                <label className="text-sm font-semibold text-gray-700">
+                  Password
+                </label>
+                <Link
+                  to="/forgot-password"
+                  size="sm"
+                  className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                >
                   Forgot?
                 </Link>
               </div>
@@ -119,11 +133,19 @@ export default function Login({ handleLogin }) {
                     type="checkbox"
                     className="peer appearance-none w-5 h-5 border-2 border-gray-300 rounded-md checked:bg-indigo-600 checked:border-indigo-600 transition-all duration-200 cursor-pointer"
                   />
-                  <svg className="absolute w-3 h-3 text-white hidden peer-checked:block pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
+                  <svg
+                    className="absolute w-3 h-3 text-white hidden peer-checked:block pointer-events-none"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  >
                     <path d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <span className="ml-3 text-sm text-gray-600 font-medium">Remember this device</span>
+                <span className="ml-3 text-sm text-gray-600 font-medium">
+                  Remember this device
+                </span>
               </label>
             </div>
 
@@ -141,7 +163,10 @@ export default function Login({ handleLogin }) {
               ) : (
                 <>
                   <span>Sign In</span>
-                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight
+                    size={18}
+                    className="group-hover:translate-x-1 transition-transform"
+                  />
                 </>
               )}
             </button>
@@ -149,16 +174,24 @@ export default function Login({ handleLogin }) {
             {/* Divider */}
             <div className="relative flex items-center py-2">
               <div className="flex-grow border-t border-gray-100"></div>
-              <span className="flex-shrink mx-4 text-gray-400 text-xs font-bold uppercase tracking-widest">Or continue with</span>
+              <span className="flex-shrink mx-4 text-gray-400 text-xs font-bold uppercase tracking-widest">
+                Or continue with
+              </span>
               <div className="flex-grow border-t border-gray-100"></div>
             </div>
 
             {/* Social Login */}
             <div className="grid grid-cols-2 gap-4">
-              <button type="button" className="flex items-center justify-center gap-2 py-3 border-2 border-gray-50 rounded-xl hover:bg-gray-50 hover:border-gray-100 transition-all font-semibold text-sm text-gray-700">
+              <button
+                type="button"
+                className="flex items-center justify-center gap-2 py-3 border-2 border-gray-50 rounded-xl hover:bg-gray-50 hover:border-gray-100 transition-all font-semibold text-sm text-gray-700"
+              >
                 <span className="text-lg">G</span> Google
               </button>
-              <button type="button" className="flex items-center justify-center gap-2 py-3 border-2 border-gray-50 rounded-xl hover:bg-gray-50 hover:border-gray-100 transition-all font-semibold text-sm text-gray-700">
+              <button
+                type="button"
+                className="flex items-center justify-center gap-2 py-3 border-2 border-gray-50 rounded-xl hover:bg-gray-50 hover:border-gray-100 transition-all font-semibold text-sm text-gray-700"
+              >
                 <span className="text-lg text-blue-600">f</span> Facebook
               </button>
             </div>
@@ -166,7 +199,10 @@ export default function Login({ handleLogin }) {
             {/* Link to Signup */}
             <p className="text-center text-gray-600 text-sm pt-4 font-medium">
               New here?{" "}
-              <Link to="/signup" className="text-indigo-600 font-bold hover:text-indigo-800 transition-colors">
+              <Link
+                to="/signup"
+                className="text-indigo-600 font-bold hover:text-indigo-800 transition-colors"
+              >
                 Create an account
               </Link>
             </p>

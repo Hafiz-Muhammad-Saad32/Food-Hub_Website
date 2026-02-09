@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { jwtCampare } from "../utils/jwt";
 import { AuthRequest } from "../@types/auth.request";
+import { log } from "console";
 
 
 export function checkJWT(req: AuthRequest, res: Response, next: NextFunction) {
@@ -15,6 +16,9 @@ export function checkJWT(req: AuthRequest, res: Response, next: NextFunction) {
     const decoded = jwtCampare(token);
 
     req.user = decoded;
+
+    console.log("backend req.user ",req.user);
+    
 
     next();
   } catch (error) {

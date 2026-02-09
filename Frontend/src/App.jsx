@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import AdminRoute from "./auth/AdminRoute";
 
@@ -24,19 +25,25 @@ import AdminLogin from "./auth/AdminLogin";
 import ProtectedRoute from "./auth/ProtectedRoute";
 
 function App() {
+  window.addEventListener("beforeunload", () => {
+    localStorage.clear(); // 🔥 clears everything
+  });
+
+  const navigate = useNavigate();
   // Global state for cart items and foods (backend-ready)
   const [cartItems, setCartItems] = useState([]);
   const [foods, setFoods] = useState([]);
 
-  const [user, setUser] = useState(() => {
-    try {
-      const storedUser = localStorage.getItem("user");
-      return storedUser ? JSON.parse(storedUser) : null;
-    } catch (error) {
-      console.error("Failed to parse user from localStorage:", error);
-      return null;
-    }
-  });
+  // const [user, setUser] = useState(() => {
+  //   try {
+  //     const storedUser = localStorage.getItem("user");
+  //     return storedUser ? JSON.parse(storedUser) : null;
+  //   } catch (error) {
+  //     console.error("Failed to parse user from localStorage:", error);
+  //     return null;
+  //   }
+  // });
+  const [user, setUser] = useState();
 
   const handleLogin = (userData) => {
     localStorage.setItem("user", JSON.stringify(userData));
@@ -47,16 +54,9 @@ function App() {
     // Clear auth info
     localStorage.removeItem("authToken");
     localStorage.removeItem("user");
-
-    // Clear cart
     setCartItems([]);
-
-    // Clear user state
     setUser(null);
-
-    // Optional: redirect to home
     navigate("/");
-
   };
 
   // Function to add item to cart
@@ -101,60 +101,62 @@ function App() {
   };
 
   return (
-    <Router>
-      <div className="flex flex-col min-h-screen bg-light">
-        <Navbar
-          cartCount={cartItems.length}
-          user={user}
-          handleLogout={handleLogout}
-        />
+    <div className="flex flex-col min-h-screen bg-light">
+      <Navbar
+        cartCount={cartItems.length}
+        user={user}
+        handleLogout={handleLogout}
+      />
 
-        <main className="flex-grow">
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Home addToCart={addToCart} />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/admin" element={<AdminLogin />} />
+      <main className="flex-grow">
+        <Routes>
+          {/* Public Routes */}
+          <Route
+            path="/"
+            element={<Home addToCart={addToCart} user={user} />}
+          />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/admin" element={<AdminLogin />} />
 
-            {/* Auth Routes */}
-            <Route
-              path="/login"
-              element={<Login handleLogin={handleLogin} />}
-            />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
+          {/* Auth Routes */}
+          <Route path="/login" element={<Login handleLogin={handleLogin} />} />
+          <Route
+            path="/signup"
+            element={<Signup handleLogin={handleLogin} />}
+          />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
 
-            {/* Cart Routes */}
-            <Route
-              path="/cart"
-              element={
-                <ProtectedRoute>
-                  <Cart
-                    cartItems={cartItems}
-                    removeFromCart={removeFromCart}
-                    updateCartQuantity={updateCartQuantity}
-                    clearCart={clearCart}
-                  />
-                </ProtectedRoute>
-              }
-            />
+          {/* Cart Routes */}
+          <Route
+            path="/cart"
+            element={
+              <ProtectedRoute>
+                <Cart
+                  foods={foods}
+                  cartItems={cartItems}
+                  removeFromCart={removeFromCart}
+                  updateCartQuantity={updateCartQuantity}
+                  clearCart={clearCart}
+                />
+              </ProtectedRoute>
+            }
+          />
 
-            {/* Admin Routes */}
-            <Route
-              path="/admin/foods"
-              element={
-                <AdminRoute>
-                  <FoodForm foods={foods} setFoods={setFoods} />
-                </AdminRoute>
-              }
-            />
-          </Routes>
-        </main>
+          {/* Admin Routes */}
+          <Route
+            path="/admin/foods"
+            element={
+              <AdminRoute>
+                <FoodForm foods={foods} setFoods={setFoods} />
+              </AdminRoute>
+            }
+          />
+        </Routes>
+      </main>
 
-        <Footer />
-      </div>
-    </Router>
+      <Footer />
+    </div>
   );
 }
 
