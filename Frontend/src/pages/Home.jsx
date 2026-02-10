@@ -15,7 +15,7 @@ const categories = [
   { id: "others", label: "Others" },
 ];
 
-export default function Home({ addToCart, user }) {
+export default function Home({ onCartChanged, user }) {
   const [foods, setFoods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -65,17 +65,29 @@ export default function Home({ addToCart, user }) {
       const token = localStorage.getItem("authToken");
       if (!token) {
         alert("Please login first");
-        return;
+        return false;
       }
 
       // userId ko send karne ki zarurat nahi, server JWT se le lega
       await cartAPI.addToCart(food._id, 1);
 
       // fetch cart if you have cart state
+      if (onCartChanged) {
+        await onCartChanged();
+      }
       alert(`${food.name} added to cart!`);
+      return true;
     } catch (err) {
       console.error("Add to cart error:", err);
       alert("Failed to add to cart");
+      return false;
+    }
+  };
+
+  const handleOrderNow = async (food) => {
+    const ok = await handleAddToCart(food);
+    if (ok) {
+      navigate("/cart");
     }
   };
 
@@ -179,7 +191,8 @@ export default function Home({ addToCart, user }) {
                   <FoodCard
                     key={food._id}
                     food={food}
-                    onAddToCart={handleAddToCart} // ye pass kar do
+                    onAddToCart={handleAddToCart}
+                    onOrderNow={handleOrderNow}
                   />
                 </div>
               ))}
@@ -220,8 +233,16 @@ export default function Home({ addToCart, user }) {
               </p>
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText("FOODHUB20");
-                  alert("Coupon code copied!");
+                  if (navigator?.clipboard?.writeText) {
+                    navigator.clipboard
+                      .writeText("FOODHUB20")
+                      .then(() => alert("Coupon code copied!"))
+                      .catch(() =>
+                        window.prompt("Copy this code:", "FOODHUB20"),
+                      );
+                  } else {
+                    window.prompt("Copy this code:", "FOODHUB20");
+                  }
                 }}
                 className="bg-white text-primary px-8 py-3 rounded-lg font-bold text-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
               >

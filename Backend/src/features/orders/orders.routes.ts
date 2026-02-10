@@ -6,10 +6,11 @@ import {
   updateOrderStatus,
   deleteOrder,
 } from "./orders.controller";
+import { checkJWT } from "../../middlewares/auth.middleware";
 
 const router = Router();
 
-router.post("/", createOrder);
+router.post("/", checkJWT, createOrder);
 router.get("/", getAllOrders);
 router.get("/:id", getOrderById);
 router.patch("/:id/status", updateOrderStatus);

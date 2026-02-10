@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import AddressManager from "../components/AddressManager";
 import { cartAPI, orderAPI } from "../services/api";
 
-export default function Cart({ foods }) {
+export default function Cart() {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -15,18 +15,11 @@ export default function Cart({ foods }) {
   const fetchCart = async () => {
     try {
       setLoading(true);
-      const { data, success } = await cartAPI.getCart();
       const response = await cartAPI.getCart();
-
-      // console.log("data ", data);
-      // console.log("response  ", response);
-
-      if (data) {
-        setCartItems(data.items);
-        // console.log("data.items 1", data.items);
-      } else {
-        setCartItems([]);
-      }
+      // backend may return { success: true, data: cart } or the cart object directly
+      const resp = response?.data?.data ?? response?.data ?? null;
+      const items = resp?.items ?? [];
+      setCartItems(items);
     } catch (err) {
       console.error(err);
       setCartItems([]);
@@ -40,26 +33,28 @@ export default function Cart({ foods }) {
 
   // Remove item
   const removeFromCart = async (foodId) => {
-    console.log(foods);
     try {
       await cartAPI.removeFromCart(foodId);
-
-      alert(`Removed is removed successfully`);
-
+      alert("Item removed from cart");
       fetchCart();
     } catch (err) {
       console.error(err);
+      alert("Failed to remove item");
     }
   };
 
   // Update quantity
   const updateCartQuantity = async (foodId, quantity) => {
-    if (quantity < 1) return;
+    if (quantity < 1) {
+      await removeFromCart(foodId);
+      return;
+    }
     try {
       await cartAPI.updateCartQuantity(foodId, quantity);
       fetchCart();
     } catch (err) {
       console.error(err);
+      alert("Failed to update quantity");
     }
   };
 
@@ -70,12 +65,14 @@ export default function Cart({ foods }) {
       setCartItems([]);
     } catch (err) {
       console.error(err);
+      alert("Failed to clear cart");
     }
   };
 
   //? Calculate total price
   const totalPrice = cartItems.reduce(
-    (sum, item) => sum + item.foodId.price * item.quantity,
+    (sum, item) =>
+      sum + (item.foodId?.price || 0) * (item.quantity || 0),
     0,
   );
 
@@ -266,7 +263,9 @@ export default function Cart({ foods }) {
                 <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Subtotal:</span>
-                    <span className="font-bold text-dark">${totalPrice}</span>
+                    <span className="font-bold text-dark">
+                      ${totalPrice.toFixed(2)}
+                    </span>
                     {/* <span className="font-bold text-dark">
                       ${totalPrice.toFixed(2)}
                     </span> */}
@@ -353,7 +352,7 @@ function OrderForm({
     try {
       const orderData = {
         items: cartItems.map((item) => ({
-          food: item._id,
+          food: item.foodId?._id,
           quantity: item.quantity,
         })),
         address: selectedAddressId,

@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import AdminRoute from "./auth/AdminRoute";
@@ -17,6 +17,7 @@ import Contact from "./pages/Contact";
 import Login from "./auth/Login";
 import Signup from "./auth/Signup";
 import ForgotPassword from "./auth/ForgotPassword";
+import { cartAPI } from "./services/api";
 
 // Cart & Admin
 import Cart from "./cart/Cart";
@@ -33,6 +34,7 @@ function App() {
   // Global state for cart items and foods (backend-ready)
   const [cartItems, setCartItems] = useState([]);
   const [foods, setFoods] = useState([]);
+  const [cartCount, setCartCount] = useState(0);
 
   // const [user, setUser] = useState(() => {
   //   try {
@@ -55,9 +57,30 @@ function App() {
     localStorage.removeItem("authToken");
     localStorage.removeItem("user");
     setCartItems([]);
+    setCartCount(0);
     setUser(null);
     navigate("/");
   };
+
+  const refreshCartCount = async () => {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      setCartCount(0);
+      return;
+    }
+    try {
+      const response = await cartAPI.getCart();
+      const items = response?.data?.data?.items || [];
+      const count = items.reduce((sum, item) => sum + item.quantity, 0);
+      setCartCount(count);
+    } catch (err) {
+      console.error("Failed to refresh cart count:", err);
+    }
+  };
+
+  useEffect(() => {
+    refreshCartCount();
+  }, [user]);
 
   // Function to add item to cart
   const addToCart = (food) => {
@@ -65,12 +88,11 @@ function App() {
     if (existingItem) {
       setCartItems(
         cartItems.map((item) =>
-          item.id === food.id ? { ...item, quantity: item.quantity + 1 } : item,
-        ),
           item._id === food._id
             ? { ...item, quantity: item.quantity + 1 }
-            : item
-        )
+            : item,
+        ),
+      );
     } else {
       setCartItems([...cartItems, { ...food, quantity: 1 }]);
     }
@@ -89,10 +111,9 @@ function App() {
     }
     setCartItems(
       cartItems.map((item) =>
-        item.id === foodId ? { ...item, quantity } : item,
+        item._id === foodId ? { ...item, quantity } : item,
       ),
-        item._id === foodId ? { ...item, quantity } : item
-      )
+    );
   };
 
   // Function to clear cart
@@ -103,7 +124,7 @@ function App() {
   return (
     <div className="flex flex-col min-h-screen bg-light">
       <Navbar
-        cartCount={cartItems.length}
+        cartCount={cartCount}
         user={user}
         handleLogout={handleLogout}
       />
@@ -113,7 +134,7 @@ function App() {
           {/* Public Routes */}
           <Route
             path="/"
-            element={<Home addToCart={addToCart} user={user} />}
+            element={<Home onCartChanged={refreshCartCount} user={user} />}
           />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
@@ -132,13 +153,7 @@ function App() {
             path="/cart"
             element={
               <ProtectedRoute>
-                <Cart
-                  foods={foods}
-                  cartItems={cartItems}
-                  removeFromCart={removeFromCart}
-                  updateCartQuantity={updateCartQuantity}
-                  clearCart={clearCart}
-                />
+                <Cart />
               </ProtectedRoute>
             }
           />

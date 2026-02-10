@@ -1,12 +1,31 @@
 import { useState } from "react";
 
-export default function FoodCard({ food, onAddToCart }) {
+export default function FoodCard({ food, onAddToCart, onOrderNow }) {
   const [isAdded, setIsAdded] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
 
-  const handleAddToCart = () => {
-    onAddToCart(food);
-    setIsAdded(true);
-    setTimeout(() => setIsAdded(false), 2000);
+  const handleAddToCart = async () => {
+    if (!onAddToCart) return;
+    try {
+      setIsAdding(true);
+      const result = await onAddToCart(food);
+      if (result) {
+        setIsAdded(true);
+        setTimeout(() => setIsAdded(false), 2000);
+      }
+    } catch (err) {
+      console.error("Add to cart failed:", err);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const handleOrderNow = () => {
+    if (onOrderNow) {
+      onOrderNow(food);
+      return;
+    }
+    handleAddToCart();
   };
 
   return (
@@ -51,15 +70,18 @@ export default function FoodCard({ food, onAddToCart }) {
         <div className="flex gap-2">
           <button
             onClick={handleAddToCart}
+            disabled={isAdding}
             className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all duration-300 ${
               isAdded
                 ? "bg-green-500 text-white"
                 : "btn-primary"
-            }`}
+            } ${isAdding ? "opacity-60 cursor-wait" : ""}`}
           >
-            {isAdded ? "✓ Added" : "🛒 Add"}
+            {isAdding ? "Adding..." : isAdded ? "✓ Added" : "🛒 Add"}
           </button>
-          <button className="flex-1 btn-outline">Order Now</button>
+          <button onClick={handleOrderNow} className="flex-1 btn-outline">
+            Order Now
+          </button>
         </div>
       </div>
     </div>

@@ -52,15 +52,15 @@ export const foodAPI = {
 //////////////////////////////////////////////////////
 
 export const addressAPI = {
-  getUserAddresses: () => apiClient.get("/addresses"),
+  getUserAddresses: () => apiClient.get("/address"),
 
-  getAddressById: (id) => apiClient.get(`/addresses/${id}`),
+  getAddressById: (id) => apiClient.get(`/address/${id}`),
 
-  createAddress: (data) => apiClient.post("/addresses", data),
+  createAddress: (data) => apiClient.post("/address", data),
 
-  updateAddress: (id, data) => apiClient.patch(`/addresses/${id}`, data),
+  updateAddress: (id, data) => apiClient.patch(`/address/update/${id}`, data),
 
-  deleteAddress: (id) => apiClient.delete(`/addresses/${id}`),
+  deleteAddress: (id) => apiClient.delete(`/address/delete/${id}`),
 };
 
 //////////////////////////////////////////////////////
@@ -86,8 +86,6 @@ export const orderAPI = {
 //////////////////////////////////////////////////////
 // 🛒 CART API
 //////////////////////////////////////////////////////
-const token = localStorage.getItem("authToken");
-
 export const cartAPI = {
   addToCart: async (foodId, quantity = 1) => {
     const token = localStorage.getItem("authToken");
@@ -107,7 +105,7 @@ export const cartAPI = {
   },
 
   getCart: async () => {
-    // const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem("authToken");
     const user = JSON.parse(localStorage.getItem("user"));
     return await apiClient.get("/cart", {
       headers: { Authorization: `Bearer ${token}` },
@@ -115,6 +113,7 @@ export const cartAPI = {
   },
 
   removeFromCart: async (foodId) => {
+    const token = localStorage.getItem("authToken");
     const user = JSON.parse(localStorage.getItem("user"));
     return await apiClient.delete(`/cart/remove/${foodId}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -122,6 +121,7 @@ export const cartAPI = {
   },
 
   updateCartQuantity: async (foodId, quantity) => {
+    const token = localStorage.getItem("authToken");
     const user = JSON.parse(localStorage.getItem("user"));
     return await apiClient.put(
       `/cart/update/${foodId}`,
@@ -133,6 +133,7 @@ export const cartAPI = {
   },
 
   clearCart: async () => {
+    const token = localStorage.getItem("authToken");
     const user = JSON.parse(localStorage.getItem("user"));
     return await apiClient.delete("/cart/clear", {
       headers: { Authorization: `Bearer ${token}` },

@@ -17,6 +17,13 @@ export const createOrder = async (req: Request, res: Response) => {
     }
 
     try {
+        const userId = (req as any).user?._id;
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized",
+            });
+        }
         // Calculate total price from items
         let totalPrice = 0;
         for (let item of data.items) {
@@ -32,7 +39,7 @@ export const createOrder = async (req: Request, res: Response) => {
 
         const order = await orderService.createOrder({
             ...data,
-            user: (req as any).user?.id,
+            user: userId,
             totalPrice,
         });
 
