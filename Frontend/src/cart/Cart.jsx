@@ -221,7 +221,7 @@ export default function Cart() {
                     onClick={() => setShowAddressManager(!showAddressManager)}
                     className="btn-primary text-sm px-4 py-2"
                   >
-                    {showAddressManager ? "Hide" : "+ Add Address"}
+                    {showAddressManager ? "Hide" : " Show Address"}
                   </button>
                 </div>
 
@@ -398,12 +398,9 @@ function OrderForm({
             {(totalPrice + 2.99 + totalPrice * 0.1).toFixed(2)}
           </p>
         </div>
-        <button
-          onClick={() => (window.location.href = "/")}
-          className="w-full btn-primary"
-        >
+        <Link to="/" className="w-full btn-primary inline-block text-center">
           Back to Home
-        </button>
+        </Link>
       </div>
     );
   }
@@ -463,3 +460,4 @@ function OrderForm({
     </div>
   );
 }
+

@@ -26,10 +26,6 @@ import AdminLogin from "./auth/AdminLogin";
 import ProtectedRoute from "./auth/ProtectedRoute";
 
 function App() {
-  window.addEventListener("beforeunload", () => {
-    localStorage.clear(); // 🔥 clears everything
-  });
-
   const navigate = useNavigate();
   // Global state for cart items and foods (backend-ready)
   const [cartItems, setCartItems] = useState([]);
@@ -45,7 +41,15 @@ function App() {
   //     return null;
   //   }
   // });
-  const [user, setUser] = useState();
+  const [user, setUser] = useState(() => {
+    try {
+      const storedUser = localStorage.getItem("user");
+      return storedUser ? JSON.parse(storedUser) : null;
+    } catch (error) {
+      console.error("Failed to parse user from localStorage:", error);
+      return null;
+    }
+  });
 
   const handleLogin = (userData) => {
     localStorage.setItem("user", JSON.stringify(userData));
@@ -176,3 +180,4 @@ function App() {
 }
 
 export default App;
+
