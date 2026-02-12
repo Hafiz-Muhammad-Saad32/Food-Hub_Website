@@ -2,6 +2,8 @@ import axios from "axios";
 
 const API_BASE_URL = "http://localhost:3000/api";
 
+// const token = localStorage.getItem("authToken");
+
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -48,19 +50,62 @@ export const foodAPI = {
 };
 
 //////////////////////////////////////////////////////
-// 📍 ADDRESS API
+// 📍 ADDRESS API - Saad
+//////////////////////////////////////////////////////
+
+// export const addressAPI = {
+//   getUserAddresses: () => apiClient.get("/address"),
+
+//   getAddressById: (id) => apiClient.get(`/address/${id}`),
+
+//   createAddress: (data) => apiClient.post("/address", data),
+
+//   updateAddress: (id, data) => apiClient.patch(`/address/${id}`, data),
+
+//   deleteAddress: (id) => apiClient.delete(`/address/${id}`),
+// };
+
 //////////////////////////////////////////////////////
 
 export const addressAPI = {
-  getUserAddresses: () => apiClient.get("/addresses"),
+  getUserAddresses: async () => {
+    const token = localStorage.getItem("authToken");
+    if (!token) throw new Error("User not logged in");
 
-  getAddressById: (id) => apiClient.get(`/addresses/${id}`),
+    return await apiClient.get("/address", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
 
-  createAddress: (data) => apiClient.post("/addresses", data),
+  getAddressById: (id) => apiClient.get(`/address/${id}`),
 
-  updateAddress: (id, data) => apiClient.patch(`/addresses/${id}`, data),
+  createAddress: async (data) => {
+    const token = localStorage.getItem("authToken");
+    if (!token) throw new Error("User not logged in");
 
-  deleteAddress: (id) => apiClient.delete(`/addresses/${id}`),
+    return await apiClient.post("/address", data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  // updateAddress: (id, data) => apiClient.patch(`/address/${id}`, data),
+
+  updateAddress: async (id, data) => {
+    const token = localStorage.getItem("authToken");
+    if (!token) throw new Error("User not logged in");
+
+    return await apiClient.patch(`/address/update/${id}`, data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+  deleteAddress: async (id) => {
+    const token = localStorage.getItem("authToken");
+    if (!token) throw new Error("User not logged in");
+
+    return await apiClient.delete(`/address/delete/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
 };
 
 //////////////////////////////////////////////////////
@@ -86,7 +131,7 @@ export const orderAPI = {
 //////////////////////////////////////////////////////
 // 🛒 CART API
 //////////////////////////////////////////////////////
-const token = localStorage.getItem("authToken");
+// const token = localStorage.getItem("authToken");
 
 export const cartAPI = {
   addToCart: async (foodId, quantity = 1) => {
@@ -107,22 +152,22 @@ export const cartAPI = {
   },
 
   getCart: async () => {
-    // const token = localStorage.getItem("authToken");
-    const user = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("authToken");
+    // const user = JSON.parse(localStorage.getItem("user"));
     return await apiClient.get("/cart", {
       headers: { Authorization: `Bearer ${token}` },
     });
   },
 
   removeFromCart: async (foodId) => {
-    const user = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("authToken");
     return await apiClient.delete(`/cart/remove/${foodId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
   },
 
   updateCartQuantity: async (foodId, quantity) => {
-    const user = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("authToken");
     return await apiClient.put(
       `/cart/update/${foodId}`,
       { quantity },
@@ -133,7 +178,7 @@ export const cartAPI = {
   },
 
   clearCart: async () => {
-    const user = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("authToken");
     return await apiClient.delete("/cart/clear", {
       headers: { Authorization: `Bearer ${token}` },
     });

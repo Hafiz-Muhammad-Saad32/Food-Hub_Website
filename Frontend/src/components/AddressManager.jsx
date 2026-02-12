@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { orderAPI } from "../services/api";
+import { orderAPI, addressAPI } from "../services/api";
 
 export default function AddressManager({ onAddressSelect, selectedAddressId }) {
   const [addresses, setAddresses] = useState([]);
@@ -32,43 +32,67 @@ export default function AddressManager({ onAddressSelect, selectedAddressId }) {
     }
   };
 
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.city.trim()) newErrors.city = "City is required";
-    if (!formData.street.trim()) newErrors.street = "Street/Address is required";
-    if (!formData.phone.trim()) newErrors.phone = "Phone is required";
-    else if (!/^\d{10,}$/.test(formData.phone.replace(/\D/g, "")))
-      newErrors.phone = "Phone must be at least 10 digits";
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  // const validateForm = () => {
+  //   const newErrors = {};
+  //   if (!formData.city.trim()) newErrors.city = "City is required";
+  //   if (!formData.street.trim()) newErrors.street = "Street/Address is required";
+  //   if (!formData.phone.trim()) newErrors.phone = "Phone is required";
+  //   else if (!/^\d{10,}$/.test(formData.phone.replace(/\D/g, "")))
+  //     newErrors.phone = "Phone must be at least 10 digits";
+
+  //   setErrors(newErrors);
+  //   return Object.keys(newErrors).length === 0;
+  // };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) {
-      alert("❌ Please fill in all required fields correctly.");
-      return;
-    }
+    // if (!validateForm()) {
+    //   alert("❌ Please fill in all required fields correctly.");
+    //   return;
+    // }
 
     setSubmitLoading(true);
     try {
       if (editingId) {
         // Update
-        await orderAPI.updateAddress(editingId, formData);
+        await addressAPI.updateAddress(editingId, formData);
         alert("✅ Address updated successfully!");
       } else {
         // Create
-        await orderAPI.createAddress(formData);
+        await addressAPI.createAddress(formData);
         alert("✅ Address added successfully!");
       }
       resetForm();
       fetchAddresses();
     } catch (err) {
-      console.error("Error saving address:", err);
-      alert(
-        `❌ Error: ${err.response?.data?.message || "Failed to save address"}`
-      );
+      // const message = err.response?.error?.message || "Failed to save address.";
+      // setErrors({ api: message });
+      // console.log(errors);
+
+      const data = err?.response?.data;
+
+      // 🟥 ZOD ERRORS
+      if (data?.error) {
+        const fieldErrors = {};
+
+        data.error.forEach((err) => {
+          const fieldName = err.path[0];
+          fieldErrors[fieldName] = err.message;
+        });
+
+        setErrors(fieldErrors);
+        setServerError("");
+        // console.log(errors);
+      }
+
+      // 🟥 SERVER ERROR
+      else if (data?.message) {
+        setServerError(data.message);
+        setErrors({});
+      }
+      // alert(
+      //   `❌ Error: ${err.response?.data?.message || "Failed to save address"}`
+      // );
     } finally {
       setSubmitLoading(false);
     }
@@ -87,13 +111,13 @@ export default function AddressManager({ onAddressSelect, selectedAddressId }) {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this address?")) {
       try {
-        await orderAPI.deleteAddress(id);
+        await addressAPI.deleteAddress(id);
         alert("✅ Address deleted successfully!");
         fetchAddresses();
       } catch (err) {
         console.error("Error deleting address:", err);
         alert(
-          `❌ Error: ${err.response?.data?.message || "Failed to delete address"}`
+          `❌ Error: ${err.response?.data?.message || "Failed to delete address"}`,
         );
       }
     }
@@ -130,7 +154,10 @@ export default function AddressManager({ onAddressSelect, selectedAddressId }) {
 
       {/* Form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white p-4 rounded-lg border-2 border-gray-200 space-y-3">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white p-4 rounded-lg border-2 border-gray-200 space-y-3"
+        >
           <div>
             <label className="block text-sm font-medium text-dark mb-1">
               City *
@@ -138,11 +165,15 @@ export default function AddressManager({ onAddressSelect, selectedAddressId }) {
             <input
               type="text"
               value={formData.city}
-              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, city: e.target.value })
+              }
               placeholder="Enter city"
               className="input-field w-full"
             />
-            {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
+            {errors.city && (
+              <p className="text-red-500 text-xs mt-1">{errors.city}</p>
+            )}
           </div>
 
           <div>
@@ -152,11 +183,15 @@ export default function AddressManager({ onAddressSelect, selectedAddressId }) {
             <input
               type="text"
               value={formData.street}
-              onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, street: e.target.value })
+              }
               placeholder="Enter street address"
               className="input-field w-full"
             />
-            {errors.street && <p className="text-red-500 text-xs mt-1">{errors.street}</p>}
+            {errors.street && (
+              <p className="text-red-500 text-xs mt-1">{errors.street}</p>
+            )}
           </div>
 
           <div>
@@ -166,11 +201,15 @@ export default function AddressManager({ onAddressSelect, selectedAddressId }) {
             <input
               type="tel"
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
               placeholder="Enter phone number"
               className="input-field w-full"
             />
-            {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+            {errors.phone && (
+              <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+            )}
           </div>
 
           <button
@@ -178,14 +217,20 @@ export default function AddressManager({ onAddressSelect, selectedAddressId }) {
             disabled={submitLoading}
             className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed py-2"
           >
-            {submitLoading ? "Saving..." : editingId ? "Update Address" : "Save Address"}
+            {submitLoading
+              ? "Saving..."
+              : editingId
+                ? "Update Address"
+                : "Save Address"}
           </button>
         </form>
       )}
 
       {/* Addresses List */}
       {addresses.length === 0 ? (
-        <p className="text-gray-600 text-center py-4">No addresses yet. Add one!</p>
+        <p className="text-gray-600 text-center py-4">
+          No addresses yet. Add one!
+        </p>
       ) : (
         <div className="space-y-2">
           {addresses.map((address) => (

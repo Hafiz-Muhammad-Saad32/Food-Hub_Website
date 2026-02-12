@@ -3,13 +3,13 @@ import Cart, { ICart } from "./cart.model";
 import mongoose from "mongoose";
 
 interface AuthRequest extends Request {
-  user?: { id: string }; // auth middleware se user aayega
+  user?: { _id: string }; // auth middleware se user aayega
 }
 
 // Add to Cart
 export const addToCart = async (req: AuthRequest, res: Response) => {
   try {
-     console.log("REQ USER:", req.user); // 🔥 check if user is coming
+    console.log("REQ USER:", req.user); // 🔥 check if user is coming
     console.log("BODY:", req.body);
     const { foodId, quantity } = req.body;
     const userId = req.user._id;
@@ -24,7 +24,7 @@ export const addToCart = async (req: AuthRequest, res: Response) => {
       });
     } else {
       const itemIndex = cart.items.findIndex(
-        (item) => item.foodId.toString() === foodId
+        (item) => item.foodId.toString() === foodId,
       );
 
       if (itemIndex > -1) {
@@ -51,9 +51,6 @@ export const addToCart = async (req: AuthRequest, res: Response) => {
   }
 };
 
-
-
-
 // Get User Cart
 export const getCart = async (req: AuthRequest, res: Response) => {
   try {
@@ -61,6 +58,45 @@ export const getCart = async (req: AuthRequest, res: Response) => {
       "items.foodId",
     );
     res.status(200).json(cart);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Update Item Quantity
+export const updateCartQuantity = async (req: AuthRequest, res: Response) => {
+  try {
+    const { foodId } = req.params;
+    const { quantity } = req.body;
+
+    const cart = await Cart.findOne({ userId: req.user._id });
+
+    if (!cart) {
+      return res.status(404).json({ message: "Cart not found" });
+    }
+
+    const itemIndex = cart.items.findIndex(
+      (item) => item.foodId.toString() === foodId,
+    );
+
+    if (itemIndex === -1) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+
+    if (quantity <= 0) {
+      cart.items.splice(itemIndex, 1);
+    } else {
+      cart.items[itemIndex].quantity = quantity;
+    }
+
+    await cart.save();
+
+    const populatedCart = await cart.populate("items.foodId");
+
+    res.status(200).json({
+      success: true,
+      data: populatedCart,
+    });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -80,5 +116,34 @@ export const removeItem = async (req: AuthRequest, res: Response) => {
     res.status(200).json(cart);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+export const clearCart = async (req: AuthRequest, res: Response) => {
+  try {
+    const cart = await Cart.findOne({ userId: req.user._id });
+
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        message: "Cart not found",
+      });
+    }
+
+    // ✅ empty items
+    cart.items = [];
+
+    await cart.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Cart cleared successfully",
+      data: cart,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };

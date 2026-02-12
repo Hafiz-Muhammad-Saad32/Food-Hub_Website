@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 
 export default function Navbar({ cartCount, user, handleLogout }) {
-  // console.log(user.name);
+  // console.log(hello);
 
   return (
     <nav className="bg-white shadow p-4 flex justify-between items-center">
@@ -15,6 +15,7 @@ export default function Navbar({ cartCount, user, handleLogout }) {
         <Link to="/about" className="font-bold underline">
           About Us
         </Link>
+        
         <Link to="/contact" className="font-bold underline">
           Contact
         </Link>
@@ -44,6 +45,7 @@ export default function Navbar({ cartCount, user, handleLogout }) {
             >
               Signup
             </Link>
+           
           </>
         ) : (
           <>
