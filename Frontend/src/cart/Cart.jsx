@@ -1,9 +1,12 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import AddressManager from "../components/AddressManager";
 import { cartAPI, orderAPI } from "../services/api";
+import { Trash2, Plus, Minus, MapPin, CreditCard, ChevronLeft, ShoppingBag } from "lucide-react";
+import { useToast } from "../context/ToastContext";
 
 export default function Cart({ foods }) {
+  const showToast = useToast();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -15,15 +18,9 @@ export default function Cart({ foods }) {
   const fetchCart = async () => {
     try {
       setLoading(true);
-      const { data, success } = await cartAPI.getCart();
-      const response = await cartAPI.getCart();
-
-      // console.log("data ", data);
-      // console.log("response  ", response);
-
+      const { data } = await cartAPI.getCart();
       if (data) {
-        setCartItems(data.items);
-        // console.log("data.items 1", data.items);
+        setCartItems(data.items || []);
       } else {
         setCartItems([]);
       }
@@ -34,25 +31,20 @@ export default function Cart({ foods }) {
       setLoading(false);
     }
   };
+  
   useEffect(() => {
     fetchCart();
   }, []);
 
-  // Remove item
   const removeFromCart = async (foodId) => {
-    console.log(foods);
     try {
       await cartAPI.removeFromCart(foodId);
-
-      alert(`Removed is removed successfully`);
-
       fetchCart();
     } catch (err) {
       console.error(err);
     }
   };
 
-  // Update quantity
   const updateCartQuantity = async (foodId, quantity) => {
     if (quantity < 1) return;
     try {
@@ -63,7 +55,6 @@ export default function Cart({ foods }) {
     }
   };
 
-  // Clear entire cart
   const clearCart = async () => {
     try {
       await cartAPI.clearCart();
@@ -73,20 +64,16 @@ export default function Cart({ foods }) {
     }
   };
 
-  //? Calculate total price
   const totalPrice = cartItems.reduce(
     (sum, item) => sum + item.foodId.price * item.quantity,
     0,
   );
 
-  // console.log("Total Price:", totalPrice);
-
-  // Calculate total items
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const handleProceedToOrder = () => {
     if (!selectedAddressId) {
-      alert("❌ Please select or add a delivery address first!");
+      showToast("Please select or add a delivery address first!","error");
       return;
     }
     setShowOrderForm(true);
@@ -94,29 +81,24 @@ export default function Cart({ foods }) {
   };
 
   if (loading) {
-    return <div className="text-center py-20">Loading your cart...</div>;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <div className="w-10 h-10 border-4 border-orange-100 border-t-orange-500 rounded-full animate-spin"></div>
+      </div>
+    );
   }
-
-  // cartItems.map((obj) => {
-  //   console.log(obj);
-  // });
-
-  // console.log(cartItems);
 
   if (cartItems.length === 0 && !showOrderForm) {
     return (
-      <div className="min-h-screen bg-light py-16">
-        <div className="container-custom text-center">
-          <div className="text-8xl mb-4">🛒</div>
-          <h1 className="text-4xl font-bold text-dark mb-4">
-            Your Cart is Empty
-          </h1>
-          <p className="text-gray-600 text-lg mb-8">
-            Looks like you haven't added anything to your cart yet. Start
-            exploring our menu!
-          </p>
-          <Link to="/" className="btn-primary inline-block">
-            Continue Shopping
+      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-6 text-center">
+        <div className="max-w-md">
+          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+            <ShoppingBag size={48} className="text-slate-200" />
+          </div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">Your cart is empty.</h1>
+          <p className="text-slate-400 text-sm mb-8">Time to add some flavor! Explore our menu and find your next favorite meal.</p>
+          <Link to="/" className="inline-flex items-center gap-2 px-8 py-3 bg-orange-500 text-white font-black rounded-2xl shadow-lg shadow-orange-200 hover:bg-slate-900 transition-all">
+            Explore Menu
           </Link>
         </div>
       </div>
@@ -124,112 +106,88 @@ export default function Cart({ foods }) {
   }
 
   return (
-    <div className="min-h-screen bg-light py-12">
-      <div className="container-custom">
+    <div className="min-h-screen bg-[#FAFAFA] py-12 px-4 md:px-8">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold text-dark mb-2">🛒 Your Cart</h1>
-          <p className="text-gray-600">
-            {totalItems} item{totalItems !== 1 ? "s" : ""} in your cart
-          </p>
+        <div className="mb-10">
+          <h1 className="text-4xl font-black text-slate-900 tracking-tighter italic">My <span className="text-orange-500 text-not-italic">Cart.</span></h1>
+          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1">{totalItems} Items selected</p>
         </div>
 
-        {/* Main Cart View */}
         {!showOrderForm ? (
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Cart Items */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white rounded-xl shadow-card p-6">
-                {cartItems.map((item) => (
-                  <div
-                    key={item.foodId._id}
-                    className="flex gap-6 mb-6 pb-6 border-b border-gray-200 last:border-0 last:mb-0 last:pb-0 animate-fadeIn"
-                  >
-                    <div className="w-24 h-24 flex-shrink-0">
-                      <img
-                        src={item.foodId.image}
-                        alt={item.foodId.name}
-                        className="w-full h-full object-cover rounded-lg"
-                        onError={(e) => {
-                          e.target.src =
-                            "https://via.placeholder.com/96?text=Food";
-                        }}
-                      />
-                    </div>
-
-                    <div className="flex-grow">
-                      <h3 className="font-bold text-dark mb-1">
-                        {item.foodId.name}
-                      </h3>
-                      <p className="text-gray-600 text-sm mb-2 line-clamp-2">
-                        {item.foodId.description}
-                      </p>
-                      {/* <p className="text-primary font-bold">
-                        ${item.price.toFixed(2)}
-                      </p> */}
-                      <p className="text-primary font-bold">
-                        ${item.foodId.price.toFixed(2)}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-col justify-between items-end">
-                      <button
-                        onClick={() => removeFromCart(item.foodId._id)}
-                        className="text-red-500 hover:text-red-700 transition-colors duration-300 font-medium text-lg"
-                      >
-                        ✕
-                      </button>
-                      <div className="flex items-center gap-3 border-2 border-gray-200 rounded-lg px-3 py-1">
-                        <button
-                          onClick={() =>
-                            updateCartQuantity(
-                              item.foodId._id,
-                              item.quantity - 1,
-                            )
-                          }
-                          className="text-lg font-bold text-primary hover:text-secondary transition-colors duration-300"
-                        >
-                          −
-                        </button>
-                        <span className="font-bold text-dark w-6 text-center">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() =>
-                            updateCartQuantity(
-                              item.foodId._id,
-                              item.quantity + 1,
-                            )
-                          }
-                          className="text-lg font-bold text-primary hover:text-secondary transition-colors duration-300"
-                        >
-                          +
-                        </button>
+          <div className="grid lg:grid-cols-12 gap-10 items-start">
+            
+            <div className="lg:col-span-8 space-y-6">
+              {/* Items List */}
+              <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm">
+                <div className="space-y-8">
+                  {cartItems.map((item) => (
+                    <div key={item.foodId._id} className="flex flex-col sm:flex-row gap-6 pb-8 border-b border-slate-50 last:border-0 last:pb-0 group">
+                      <div className="w-28 h-28 flex-shrink-0 bg-slate-100 rounded-3xl overflow-hidden relative">
+                        <img 
+                          src={item.foodId.image} 
+                          alt={item.foodId.name} 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
                       </div>
-                      <p className="font-bold text-dark">
-                        ${(item.foodId.price * item.quantity).toFixed(2)}
-                      </p>
+
+                      <div className="flex-grow">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-black text-slate-900 text-lg leading-tight">{item.foodId.name}</h3>
+                            <p className="text-slate-400 text-xs mt-1 line-clamp-1">{item.foodId.description}</p>
+                          </div>
+                          <button 
+                            onClick={() => removeFromCart(item.foodId._id)}
+                            className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-6">
+                          <div className="flex items-center bg-slate-50 rounded-2xl p-1 border border-slate-100">
+                            <button 
+                              onClick={() => updateCartQuantity(item.foodId._id, item.quantity - 1)}
+                              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-orange-500 transition-colors"
+                            >
+                              <Minus size={14} strokeWidth={3} />
+                            </button>
+                            <span className="w-8 text-center font-black text-slate-900 text-sm">{item.quantity}</span>
+                            <button 
+                              onClick={() => updateCartQuantity(item.foodId._id, item.quantity + 1)}
+                              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-orange-500 transition-colors"
+                            >
+                              <Plus size={14} strokeWidth={3} />
+                            </button>
+                          </div>
+                          <p className="font-black text-slate-900 text-lg">${(item.foodId.price * item.quantity).toFixed(2)}</p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
-              {/* Address Section */}
-              <div className="bg-white rounded-xl shadow-card p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold text-dark">
-                    📍 Delivery Address
-                  </h3>
+              {/* Address Card */}
+              <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500">
+                      <MapPin size={20} />
+                    </div>
+                    <h3 className="text-lg font-black text-slate-900 tracking-tight">Delivery Address</h3>
+                  </div>
                   <button
                     onClick={() => setShowAddressManager(!showAddressManager)}
-                    className="btn-primary text-sm px-4 py-2"
+                    className="text-xs font-black text-orange-500 uppercase tracking-widest hover:text-slate-900 transition-colors"
                   >
-                    {showAddressManager ? "Hide" : "+ Add Address"}
+                    {showAddressManager ? "Close" : "Change"}
                   </button>
                 </div>
 
                 {showAddressManager && (
-                  <div className="mb-6 p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
+                  <div className="mb-6 animate-fadeIn">
                     <AddressManager
                       onAddressSelect={(id, details) => {
                         setSelectedAddressId(id);
@@ -240,70 +198,64 @@ export default function Cart({ foods }) {
                   </div>
                 )}
 
-                {selectedAddressDetails && (
-                  <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">
-                      <strong>✅ Selected Address:</strong>
-                    </p>
-                    <p className="text-dark font-medium">
-                      {selectedAddressDetails.street},{" "}
-                      {selectedAddressDetails.city}
-                    </p>
-                    <p className="text-gray-600 text-sm">
-                      📱 {selectedAddressDetails.phone}
-                    </p>
+                {selectedAddressDetails ? (
+                  <div className="bg-slate-50 rounded-3xl p-5 border border-slate-100 flex items-center justify-between">
+                    <div>
+                      <p className="text-slate-900 font-black text-sm">{selectedAddressDetails.street}</p>
+                      <p className="text-slate-400 font-bold text-[10px] uppercase mt-0.5">{selectedAddressDetails.city} • {selectedAddressDetails.phone}</p>
+                    </div>
+                    <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-200">
+                      <Plus size={16} className="rotate-45" /> 
+                    </div>
                   </div>
+                ) : (
+                   <p className="text-slate-400 text-sm font-medium italic">No address selected yet.</p>
                 )}
               </div>
             </div>
 
-            {/* Order Summary */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl shadow-card p-6 sticky top-24">
-                <h3 className="text-xl font-bold text-dark mb-6">
-                  Order Summary
-                </h3>
-                <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Subtotal:</span>
-                    <span className="font-bold text-dark">${totalPrice}</span>
-                    {/* <span className="font-bold text-dark">
-                      ${totalPrice.toFixed(2)}
-                    </span> */}
+            {/* Order Summary Sticky */}
+            <div className="lg:col-span-4 lg:sticky lg:top-24">
+              <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl shadow-slate-200">
+                <h3 className="text-xl font-black mb-8 tracking-tight">Summary</h3>
+                
+                <div className="space-y-4 mb-8">
+                  <div className="flex justify-between text-slate-400 text-sm font-bold">
+                    <span>Subtotal</span>
+                    <span className="text-white">${totalPrice.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Delivery Fee:</span>
-                    <span className="font-bold text-dark">$2.99</span>
+                  <div className="flex justify-between text-slate-400 text-sm font-bold">
+                    <span>Delivery</span>
+                    <span className="text-white">$2.99</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Tax (10%):</span>
-                    <span className="font-bold text-dark">
-                      ${(totalPrice * 0.1).toFixed(2)}
+                  <div className="flex justify-between text-slate-400 text-sm font-bold pb-4 border-b border-slate-800">
+                    <span>Tax (10%)</span>
+                    <span className="text-white">${(totalPrice * 0.1).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="text-lg font-black uppercase tracking-tighter">Total</span>
+                    <span className="text-3xl font-black text-orange-500 tracking-tighter">
+                      ${(totalPrice + 2.99 + totalPrice * 0.1).toFixed(2)}
                     </span>
                   </div>
                 </div>
-                <div className="flex justify-between items-center mb-6">
-                  <span className="text-lg font-bold text-dark">Total:</span>
-                  <span className="text-2xl font-bold text-primary">
-                    ${(totalPrice + 2.99 + totalPrice * 0.1).toFixed(2)}
-                  </span>
+
+                <div className="space-y-3">
+                  <button
+                    onClick={handleProceedToOrder}
+                    className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-black rounded-2xl transition-all shadow-lg shadow-orange-900/20 uppercase text-xs tracking-[0.2em]"
+                  >
+                    Proceed to Order
+                  </button>
+                  <button onClick={clearCart} className="w-full py-3 text-slate-500 hover:text-white font-black text-[10px] uppercase tracking-widest transition-colors">
+                    Empty Cart
+                  </button>
                 </div>
-                <button
-                  onClick={handleProceedToOrder}
-                  className="w-full btn-primary mb-3"
-                >
-                  Proceed to Order
-                </button>
-                <button onClick={clearCart} className="w-full btn-outline">
-                  Clear Cart
-                </button>
-                <Link
-                  to="/"
-                  className="block mt-4 text-center text-primary hover:text-secondary transition-colors duration-300 font-medium"
-                >
-                  ← Continue Shopping
-                </Link>
               </div>
+
+              <Link to="/" className="flex items-center justify-center gap-2 mt-6 text-slate-400 hover:text-slate-900 transition-colors text-xs font-black uppercase tracking-widest">
+                <ChevronLeft size={14} /> Back to Shopping
+              </Link>
             </div>
           </div>
         ) : (
@@ -322,20 +274,10 @@ export default function Cart({ foods }) {
   );
 }
 
-// ---------- OrderForm Component (unchanged from your existing one) ----------
-function OrderForm({
-  cartItems,
-  totalPrice,
-  totalItems,
-  selectedAddressId,
-  selectedAddressDetails,
-  onBackToCart,
-  clearCart,
-}) {
-  const [formData, setFormData] = useState({
-    paymentMethod: "card",
-    specialInstructions: "",
-  });
+// ---------- Modern OrderForm Component ----------
+function OrderForm({ cartItems, totalPrice, totalItems, selectedAddressId, selectedAddressDetails, onBackToCart, clearCart }) {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({ paymentMethod: "card", specialInstructions: "" });
   const [loading, setLoading] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState(null);
@@ -347,15 +289,11 @@ function OrderForm({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedAddressId) return alert("❌ No address selected!");
-
+    if (!selectedAddressId) return showToast("No address selected!","error");
     setLoading(true);
     try {
       const orderData = {
-        items: cartItems.map((item) => ({
-          food: item._id,
-          quantity: item.quantity,
-        })),
+        items: cartItems.map((item) => ({ food: item.foodId._id, quantity: item.quantity })),
         address: selectedAddressId,
         paymentMethod: formData.paymentMethod,
         specialInstructions: formData.specialInstructions,
@@ -364,10 +302,8 @@ function OrderForm({
       setOrderId(response.data.data._id);
       setOrderPlaced(true);
       clearCart();
-      alert("✅ Order placed successfully!");
     } catch (err) {
       console.error(err);
-      alert("❌ Failed to place order. Try again.");
     } finally {
       setLoading(false);
     }
@@ -375,89 +311,73 @@ function OrderForm({
 
   if (orderPlaced) {
     return (
-      <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-card p-12 text-center animate-fadeIn">
-        <div className="text-8xl mb-6">✅</div>
-        <h2 className="text-4xl font-bold text-dark mb-4">
-          Order Placed Successfully!
-        </h2>
-        <p className="text-gray-600 text-lg mb-6">
-          Your food will be delivered soon.
-        </p>
-        <div className="bg-gray-100 rounded-lg p-6 text-left mb-8">
-          <p>
-            <strong>Order ID:</strong> #{orderId?.slice(-9)}
-          </p>
-          <p>
-            <strong>Delivery Address:</strong> {selectedAddressDetails?.street},{" "}
-            {selectedAddressDetails?.city}
-          </p>
-          <p>
-            <strong>Total Items:</strong> {totalItems}
-          </p>
-          <p className="font-bold text-primary">
-            <strong>Total:</strong> $
-            {(totalPrice + 2.99 + totalPrice * 0.1).toFixed(2)}
-          </p>
+      <div className="max-w-2xl mx-auto bg-white rounded-[3rem] p-12 text-center shadow-xl shadow-slate-100 animate-fadeIn border border-slate-100">
+        <div className="w-24 h-24 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-8">
+          <ShoppingBag size={48} />
         </div>
-        <button
-          onClick={() => (window.location.href = "/")}
-          className="w-full btn-primary"
-        >
-          Back to Home
+        <h2 className="text-4xl font-black text-slate-900 tracking-tighter mb-4">Ordered!</h2>
+        <p className="text-slate-400 text-sm mb-10 max-w-sm mx-auto">Your delicious meal is being prepared. Grab your fork!</p>
+        
+        <div className="bg-slate-50 rounded-[2rem] p-8 text-left mb-10 border border-slate-100">
+          <div className="grid grid-cols-2 gap-y-4 text-xs font-bold">
+            <span className="text-slate-400 uppercase tracking-widest">Order ID</span>
+            <span className="text-slate-900 text-right">#{orderId?.slice(-8).toUpperCase()}</span>
+            <span className="text-slate-400 uppercase tracking-widest">Amount Paid</span>
+            <span className="text-orange-500 text-right font-black">${(totalPrice + 2.99 + totalPrice * 0.1).toFixed(2)}</span>
+          </div>
+        </div>
+
+        <button onClick={() => navigate("/order")} className="w-full py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl shadow-slate-200 hover:bg-orange-500 transition-all uppercase text-xs tracking-widest">
+          Track My Order
         </button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-card p-8">
-      <h2 className="text-2xl font-bold text-dark mb-8">
-        📦 Complete Your Order
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-dark mb-2">
-            Payment Method
-          </label>
-          <select
-            name="paymentMethod"
-            value={formData.paymentMethod}
-            onChange={handleChange}
-            className="input-field w-full"
-          >
-            <option value="card">💳 Credit/Debit Card</option>
-            <option value="wallet">💰 Digital Wallet</option>
-            <option value="upi">📱 UPI</option>
-            <option value="cash">💵 Cash on Delivery</option>
-          </select>
+    <div className="max-w-2xl mx-auto bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm">
+      <div className="flex items-center gap-4 mb-10">
+        <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500">
+          <CreditCard size={24} />
         </div>
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Checkout</h2>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-8">
         <div>
-          <label className="block text-sm font-medium text-dark mb-2">
-            Special Instructions (Optional)
-          </label>
+          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Payment Method</label>
+          <div className="grid grid-cols-1 gap-3">
+            <select
+              name="paymentMethod"
+              value={formData.paymentMethod}
+              onChange={handleChange}
+              className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl font-bold text-slate-900 appearance-none focus:ring-2 focus:ring-orange-500 outline-none"
+            >
+              <option value="card">💳 Credit/Debit Card</option>
+              <option value="wallet">💰 Digital Wallet</option>
+              <option value="cash">💵 Cash on Delivery</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Cooking Instructions</label>
           <textarea
             name="specialInstructions"
             value={formData.specialInstructions}
             onChange={handleChange}
-            placeholder="Extra spicy, no onions..."
+            placeholder="e.g. Please make it extra spicy or leave at the door..."
             rows={3}
-            className="input-field resize-none w-full"
+            className="w-full bg-slate-50 border border-slate-100 p-4 rounded-2xl font-bold text-slate-900 focus:ring-2 focus:ring-orange-500 outline-none resize-none placeholder:text-slate-300 text-sm"
           />
         </div>
-        <div className="flex gap-4">
-          <button
-            type="button"
-            onClick={onBackToCart}
-            className="flex-1 btn-outline"
-          >
-            Back to Cart
+
+        <div className="flex gap-4 pt-4">
+          <button type="button" onClick={onBackToCart} className="flex-1 py-4 text-slate-400 font-black rounded-2xl border border-slate-100 hover:bg-slate-50 transition-all uppercase text-[10px] tracking-widest">
+            Back
           </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 btn-primary"
-          >
-            {loading ? "Processing..." : "Place Order"}
+          <button type="submit" disabled={loading} className="flex-[2] py-4 bg-orange-500 text-white font-black rounded-2xl shadow-lg shadow-orange-100 hover:bg-slate-900 transition-all uppercase text-[10px] tracking-widest">
+            {loading ? "Placing..." : "Confirm Order"}
           </button>
         </div>
       </form>

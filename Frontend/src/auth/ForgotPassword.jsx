@@ -37,12 +37,12 @@ export default function ForgotPassword() {
     // });
 
     // Simulate API delay
-    setTimeout(() => {
-      console.log("Password reset requested for:", email);
-      setStep(2);
-      setLoading(false);
-      setErrors({});
-    }, 1500);
+    // setTimeout(() => {
+    //   console.log("Password reset requested for:", email);
+    //   setStep(2);
+    //   setLoading(false);
+    //   setErrors({});
+    // }, 1500);
   };
 
   // Step 2: OTP verification
@@ -71,12 +71,12 @@ export default function ForgotPassword() {
     // });
 
     // Simulate API delay
-    setTimeout(() => {
-      console.log("OTP verified for:", email);
-      setStep(3);
-      setLoading(false);
-      setErrors({});
-    }, 1500);
+    // setTimeout(() => {
+    //   console.log("OTP verified for:", email);
+    //   setStep(3);
+    //   setLoading(false);
+    //   setErrors({});
+    // }, 1500);
   };
 
   // Step 3: Reset password
@@ -109,14 +109,14 @@ export default function ForgotPassword() {
     // });
 
     // Simulate API delay
-    setTimeout(() => {
-      console.log("Password reset successfully for:", email);
-      setSuccessMessage("Password reset successfully! Redirecting to login...");
-      setLoading(false);
-      setTimeout(() => {
-        window.location.href = "/login";
-      }, 2000);
-    }, 1500);
+    // setTimeout(() => {
+    //   console.log("Password reset successfully for:", email);
+    //   setSuccessMessage("Password reset successfully! Redirecting to login...");
+    //   setLoading(false);
+    //   setTimeout(() => {
+    //     window.location.href = "/login";
+    //   }, 2000);
+    // }, 1500);
   };
 
   return (

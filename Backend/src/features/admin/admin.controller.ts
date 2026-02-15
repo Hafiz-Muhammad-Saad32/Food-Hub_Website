@@ -1,62 +1,8 @@
 import { Request, Response } from "express";
 import adminModel from "./admin.model";
-import {
-  loginZodSchema,
-  updateUserZodSchema,
-  userZodSchema,
-} from "../users/users.validation";
-import { comparePassword, hashing } from "../../utils/brycpt";
-import { generateJWT, jwtCampare } from "../../utils/jwt";
+import { updateUserZodSchema } from "../users/users.validation";
+import { hashing } from "../../utils/brycpt";
 import { UserTypes } from "../../@types/user.type";
-import usersModel from "../users/users.model";
-
-// export async function registerAdmin(req: Request, res: Response) {
-//   try {
-//     const { success, data, error } = userZodSchema.safeParse(req.body);
-
-//     if (!success) {
-//       return res.status(400).json({
-//         success: false,
-//         message: error.issues[0].message,
-//       });
-//     }
-
-//     const isFound = await adminModel.findOne({ email: data.email });
-//     if (isFound) {
-//       return res.status(400).json({
-//         success: false,
-//         message:
-//           "admin already exits with this email! Please try with different email",
-//       });
-//     }
-
-//     const hashedPassword = await hashing(data.password);
-
-//     const admin = new adminModel({
-//       name: data.name,
-//       email: data.email,
-//       password: hashedPassword,
-//       role: data.role,
-//       phone: data.phone,
-//       experience: data.experience,
-//     });
-
-//     const newAdmin = await admin.save();
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Admin created successfully!",
-//       data: newAdmin,
-//     });
-//   } catch (error) {
-//     console.log(error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal server error" + error,
-//     });
-//   }
-// }
-
 
 export async function updateAdmin(
   req: Request<{ adminId: string }, {}, UserTypes>,

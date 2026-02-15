@@ -4,8 +4,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { apiClient } from "../services/api";
 import { Mail, Lock, LogIn, ArrowRight } from "lucide-react"; // npm install lucide-react
 import { jwtDecode } from "jwt-decode";
+import {useToast} from "../context/ToastContext"
 
 export default function Login({ handleLogin }) {
+   const showToast = useToast(); 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
@@ -24,24 +26,25 @@ export default function Login({ handleLogin }) {
         password,
       });
 
-      const { accessToken } = response.data;
-      const decoded = jwtDecode(accessToken);
+      // const { accessToken } = response.data;
+      // const decoded = jwtDecode(accessToken);
 
       // console.log("decoded ", decoded);
       // console.log("response ", response);
 
-      localStorage.setItem("authToken", accessToken);
-      localStorage.setItem("userRole", decoded.role);
+      localStorage.setItem("authToken", response.data.accessToken);
+      // localStorage.setItem("userRole", decoded.role);
 
       handleLogin(response.data.user); // update App state
 
       navigate("/");
     } catch (error) {
-     console.log(error);
+    //  console.log(error);
      
       const message =
         error.response?.data?.message ||
         "Login failed. Please check your credentials.";
+        showToast(message,"error");
       setErrors({ api: message });
     } finally {
       setLoading(false);

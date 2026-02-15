@@ -35,9 +35,18 @@ apiClient.interceptors.response.use(
 //////////////////////////////////////////////////////
 
 export const foodAPI = {
-  getAllFoods: () => apiClient.get("/foods"),
+  // getAllFoods: () => apiClient.get("/foods"),
+  // getAllFoods: async (page = 1, limit = 6) => {
+  //   return apiClient.get(`/foods?page=${page}&limit=${limit}`);
+  // },
 
-  getFoodById: (id) => apiClient.get(`/foods/getById/${id}`),
+  getAllFoods: async (page = 1, limit = 6, selectedCategory = "all") => {
+    return apiClient.get(
+      `/foods?page=${page}&limit=${limit}&selectedCategory=${selectedCategory}`,
+    );
+  },
+
+  getFoodById: (id) => apiClient.get(`/foods/${id}`),
 
   addFood: (foodData) => apiClient.post("/foods/add", foodData),
 
@@ -47,20 +56,17 @@ export const foodAPI = {
   deleteFood: (id) => apiClient.delete(`/foods/delete/${id}`),
 };
 
-//////////////////////////////////////////////////////
-// 📍 ADDRESS API
-//////////////////////////////////////////////////////
+///////////////////////////////////////
 
 export const addressAPI = {
-  getUserAddresses: () => apiClient.get("/addresses"),
+  getUserAddresses: () => apiClient.get("/address"),
 
-  getAddressById: (id) => apiClient.get(`/addresses/${id}`),
+  getAddressById: (id) => apiClient.get(`/address/${id}`),
 
-  createAddress: (data) => apiClient.post("/addresses", data),
+  createAddress: (data) => apiClient.post("/address", data),
 
-  updateAddress: (id, data) => apiClient.patch(`/addresses/${id}`, data),
-
-  deleteAddress: (id) => apiClient.delete(`/addresses/${id}`),
+  updateAddress: (id, data) => apiClient.patch(`/address/update/${id}`, data),
+  deleteAddress: (id) => apiClient.delete(`/address/delete/${id}`),
 };
 
 //////////////////////////////////////////////////////
@@ -70,7 +76,12 @@ export const addressAPI = {
 export const orderAPI = {
   createOrder: (orderData) => apiClient.post("/orders", orderData),
 
-  getUserOrders: () => apiClient.get("/orders"),
+  // getUserOrders: () => apiClient.get("/orders"),
+  getUserOrders: (status) => {
+    return apiClient.get("/orders", {
+      params: status ? { status } : {},
+    });
+  },
 
   getOrderById: (id) => apiClient.get(`/orders/${id}`),
 
@@ -86,56 +97,28 @@ export const orderAPI = {
 //////////////////////////////////////////////////////
 // 🛒 CART API
 //////////////////////////////////////////////////////
-const token = localStorage.getItem("authToken");
 
 export const cartAPI = {
-  addToCart: async (foodId, quantity = 1) => {
-    const token = localStorage.getItem("authToken");
-    const user = JSON.parse(localStorage.getItem("user"));
-    // console.log(token);
-    // if (!user) throw new Error("User not logged in");
+  addToCart: (foodId, quantity = 1) =>
+    apiClient.post("/cart/add", { foodId, quantity }),
 
-    if (!token) throw new Error("User not logged in");
+  getCart: () => apiClient.get("/cart"),
 
-    return await apiClient.post(
-      "/cart/add",
-      { foodId, quantity },
-      {
-        headers: { Authorization: `Bearer ${token}` }, // <-- important
-      },
-    );
-  },
+  removeFromCart: (foodId) => apiClient.delete(`/cart/remove/${foodId}`),
 
-  getCart: async () => {
-    // const token = localStorage.getItem("authToken");
-    const user = JSON.parse(localStorage.getItem("user"));
-    return await apiClient.get("/cart", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  },
+  updateCartQuantity: (foodId, quantity) =>
+    apiClient.put(`/cart/update/${foodId}`, { quantity }),
 
-  removeFromCart: async (foodId) => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    return await apiClient.delete(`/cart/remove/${foodId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  },
+  clearCart: () => apiClient.delete("/cart/clear"),
+};
 
-  updateCartQuantity: async (foodId, quantity) => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    return await apiClient.put(
-      `/cart/update/${foodId}`,
-      { quantity },
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      },
-    );
-  },
+//////////////////////////////////////////////////////
+// Users API
+//////////////////////////////////////////////////////
 
-  clearCart: async () => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    return await apiClient.delete("/cart/clear", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  },
+// services/api.ts
+export const userAPI = {
+  getAllUsers: () => apiClient.get("/users"),
+  deleteUser: (id) => apiClient.delete(`/users/delete/${id}`),
+  verifyEmail: (token) => apiClient.get(`/auth/verify-email/${token}`),
 };

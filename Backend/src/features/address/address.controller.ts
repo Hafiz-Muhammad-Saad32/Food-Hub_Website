@@ -13,14 +13,14 @@ export const createAddress = async (req: Request, res: Response) => {
   if (!success) {
     return res.status(400).json({
       success: false,
-      error: error.issues[0].message,
+      error: error.issues,
     });
   }
 
   try {
     const address = await addressService.createAddress({
       ...data, 
-      user: (req as any).user?.id,
+      user: (req as any).user?._id,
     });
 
     return res.status(201).json({
@@ -29,6 +29,8 @@ export const createAddress = async (req: Request, res: Response) => {
       data: address,
     });
   } catch (err: any) {
+    console.log(err);
+    
     return res.status(500).json({
       success: false,
       message: "Internal server error: " + err.message,
@@ -36,10 +38,10 @@ export const createAddress = async (req: Request, res: Response) => {
   }
 };
 
-// GET ALL USER ADDRESSES (for regular users)
+//* GET ALL USER ADDRESSES (for regular users)
 export const getAllUserAddress = async (req: Request, res: Response) => {
   try {
-    const addresses = await addressService.getUserAddresses((req as any).user?.id);
+    const addresses = await addressService.getUserAddresses((req as any).user?._id);
 
     if (addresses.length === 0) {
       return res.status(200).json({
@@ -55,6 +57,8 @@ export const getAllUserAddress = async (req: Request, res: Response) => {
       data: addresses,
     });
   } catch (err: any) {
+    console.log(err);
+    
     return res.status(500).json({
       success: false,
       message: "Internal server error: " + err.message,
@@ -62,7 +66,7 @@ export const getAllUserAddress = async (req: Request, res: Response) => {
   }
 };
 
-// GET ADDRESS BY ID
+//* GET ADDRESS BY ID
 export const getAddressById = async (req: Request, res: Response) => {
   const parsed = addressParamSchema.safeParse(req.params);
 
@@ -76,6 +80,9 @@ export const getAddressById = async (req: Request, res: Response) => {
   try {
     const address = await addressService.getAddressById(parsed.data.id);
 
+    // console.log(parsed.data.id);
+    
+
     if (!address) {
       return res.status(404).json({
         success: false,
@@ -83,8 +90,7 @@ export const getAddressById = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if address belongs to current user
-    if (address.user.toString() !== (req as any).user?.id) {
+    if (address.user.toString() !== (req as any).user?._id) {
       return res.status(403).json({
         success: false,
         message: "Unauthorized access",
@@ -97,6 +103,8 @@ export const getAddressById = async (req: Request, res: Response) => {
       data: address,
     });
   } catch (err: any) {
+    console.log(err);
+    
     return res.status(500).json({
       success: false,
       message: "Internal server error: " + err.message,
@@ -104,7 +112,7 @@ export const getAddressById = async (req: Request, res: Response) => {
   }
 };
 
-// UPDATE ADDRESS
+//* UPDATE ADDRESS
 export const updateAddress = async (req: Request, res: Response) => {
   const paramParsed = addressParamSchema.safeParse(req.params);
   const bodyParsed = updateAddressSchema.safeParse(req.body);
@@ -126,7 +134,7 @@ export const updateAddress = async (req: Request, res: Response) => {
       });
     }
 
-    if (address.user.toString() !== (req as any).user?.id) {
+    if (address.user.toString() !== (req as any).user?._id) {
       return res.status(403).json({
         success: false,
         message: "Unauthorized access",
@@ -152,7 +160,7 @@ export const updateAddress = async (req: Request, res: Response) => {
   }
 };
 
-// DELETE ADDRESS (SOFT DELETE)
+//* DELETE ADDRESS (SOFT DELETE)
 export const deleteAddress = async (req: Request, res: Response) => {
   const parsed = addressParamSchema.safeParse(req.params);
 
@@ -173,7 +181,7 @@ export const deleteAddress = async (req: Request, res: Response) => {
       });
     }
 
-    if (address.user.toString() !== (req as any).user?.id) {
+    if (address.user.toString() !== (req as any).user?._id) {
       return res.status(403).json({
         success: false,
         message: "Unauthorized access",

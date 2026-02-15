@@ -1,7 +1,24 @@
 import { useState, useEffect } from "react";
 import { foodAPI } from "../services/api";
+import {useToast} from "../context/ToastContext"
 
-export default function FoodForm({ foods, setFoods }) {
+import {
+  Plus,
+  Search,
+  Edit3,
+  Trash2,
+  X,
+  Image as ImageIcon,
+  Star,
+  Tag,
+  DollarSign,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
+
+export default function FoodForm({ setFoods }) {
+  const showToast = useToast()
   const [localFoods, setLocalFoods] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -19,12 +36,10 @@ export default function FoodForm({ foods, setFoods }) {
   const [successMessage, setSuccessMessage] = useState("");
   const [pageLoading, setPageLoading] = useState(true);
 
-  // Fetch foods from backend on mount
   useEffect(() => {
     fetchFoods();
   }, []);
 
-  // Fetch all foods
   const fetchFoods = async () => {
     try {
       setPageLoading(true);
@@ -34,108 +49,80 @@ export default function FoodForm({ foods, setFoods }) {
       setFoods(foods);
     } catch (err) {
       console.error("Error fetching foods:", err);
-      setSuccessMessage("❌ Error loading foods");
-      setTimeout(() => setSuccessMessage(""), 3000);
+      showStatus("❌ Error loading foods", "error");
     } finally {
       setPageLoading(false);
     }
   };
 
-  // Update global state when local foods change
-  useEffect(() => {
-    setFoods(localFoods);
-  }, [localFoods, setFoods]);
+  const showStatus = (msg) => {
+    setSuccessMessage(msg);
+    setTimeout(() => setSuccessMessage(""), 4000);
+  };
 
-  // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "price" || name === "rating" ? parseFloat(value) : value,
+      [name]:
+        name === "price" || name === "rating"
+          ? value === ""
+            ? ""
+            : parseFloat(value)
+          : value,
     }));
   };
 
-  // Validate form
-  const validateForm = () => {
-    const newErrors = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Food name is required";
-    }
-
-    if (!formData.price || formData.price <= 0) {
-      newErrors.price = "Valid price is required";
-    }
-
-    if (!formData.image.trim()) {
-      newErrors.image = "Image URL is required";
-    }
-
-    if (!formData.description.trim()) {
-      newErrors.description = "Description is required";
-    }
-
-    if (formData.rating === "" || formData.rating < 0 || formData.rating > 5) {
-      newErrors.rating = "Rating must be between 0 and 5";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) return;
-
     setLoading(true);
 
     try {
       if (editingId) {
-        // UPDATE existing food
-        await foodAPI.updateFood(editingId, {
-          name: formData.name,
-          description: formData.description,
-          price: formData.price,
-          rating: formData.rating,
-          category: formData.category,
-          image: formData.image,
-        });
-
-        setSuccessMessage("✓ Food updated successfully!");
-        setLocalFoods(
-          localFoods.map((food) =>
-            food._id === editingId ? { ...food, ...formData } : food
-          )
-        );
+        await foodAPI.updateFood(editingId, formData);
+        // showStatus("✓ Item updated successfully");
+        showToast("Item updated successfully","success");
       } else {
-        // ADD new food
-        const response = await foodAPI.addFood({
-          name: formData.name,
-          description: formData.description,
-          price: formData.price,
-          rating: formData.rating || 0,
-          category: formData.category,
-          image: formData.image,
+        const response = await foodAPI.addFood(formData);
+        setLocalFoods([...localFoods, response.data.data]);
+        // showStatus("✓ New item added to menu");
+        showToast("New item added to menu","succes");
+      }
+      fetchFoods(); // Refresh list
+      resetForm();
+    } catch (err) {
+      const data = err?.response?.data || "nothing";
+
+      // console.log(data.error);
+
+      // 🟥 ZOD ERRORS
+      if (data?.error) {
+        const fieldErrors = {};
+
+        data.error.forEach((err) => {
+          const fieldName = err.path[0]; // email, password etc
+          fieldErrors[fieldName] = err.message;
         });
 
-        setSuccessMessage("✓ Food added successfully!");
-        setLocalFoods([...localFoods, response.data.data]);
+        setErrors(fieldErrors);
+        // console.log(errors);
+
+        setServerError("");
+        // console.log(errors);
       }
 
-      resetForm();
-      setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (err) {
-      console.error("Error saving food:", err);
-      setSuccessMessage("❌ Error: " + (err.response?.data?.message || "Failed to save food"));
-      setTimeout(() => setSuccessMessage(""), 3000);
+      // 🟥 SERVER ERROR
+      else if (data?.message) {
+        setServerError(data.message);
+        setErrors({});
+      }
+      // showStatus("❌ " + (err.response?.data?.message || "Operation failed"));
     } finally {
       setLoading(false);
     }
   };
 
-  // Reset form
   const resetForm = () => {
     setFormData({
       name: "",
@@ -150,7 +137,6 @@ export default function FoodForm({ foods, setFoods }) {
     setShowForm(false);
   };
 
-  // Edit food
   const handleEdit = (food) => {
     setFormData({
       name: food.name,
@@ -162,370 +148,318 @@ export default function FoodForm({ foods, setFoods }) {
     });
     setEditingId(food._id);
     setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Delete food
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this food item?")) {
-      return;
-    }
-
+    if (!window.confirm("Permanent delete this item?")) return;
     try {
-      setLoading(true);
       await foodAPI.deleteFood(id);
-      setLocalFoods(localFoods.filter((food) => food._id !== id));
-      setSuccessMessage("✓ Food deleted successfully!");
-      setTimeout(() => setSuccessMessage(""), 3000);
+      setLocalFoods(localFoods.filter((f) => f._id !== id));
+      showStatus("✓ Item removed from menu");
     } catch (err) {
-      console.error("Error deleting food:", err);
-      setSuccessMessage("❌ Error: " + (err.response?.data?.message || "Failed to delete food"));
-      setTimeout(() => setSuccessMessage(""), 3000);
-    } finally {
-      setLoading(false);
+      showStatus("❌ Failed to delete");
     }
   };
 
-  // Filter foods based on search
-  const filteredFoods = localFoods.filter(
-    (food) =>
-      food.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      food.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredFoods = localFoods.filter((food) =>
+    food.name?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
-    <div className="min-h-screen bg-light py-12">
-      <div className="container-custom">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-12">
+    <div className="min-h-screen bg-[#FAFAFA] py-12 px-4 md:px-8">
+      <div className="max-w-6xl mx-auto">
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div>
-            <h1 className="text-4xl font-bold text-dark">🍴 Admin Panel</h1>
-            <p className="text-gray-600 mt-2">Manage your food menu</p>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tighter italic">
+              Menu{" "}
+              <span className="text-orange-500 not-italic">Inventory.</span>
+            </h1>
+            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1">
+              Add, edit, or remove catalog items
+            </p>
           </div>
           <button
             onClick={() => (showForm ? resetForm() : setShowForm(true))}
-            className={`${showForm ? "btn-outline" : "btn-primary"}`}
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
+              showForm
+                ? "bg-slate-200 text-slate-600"
+                : "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
+            }`}
           >
-            {showForm ? "Cancel" : "+ Add New Food"}
+            {showForm ? <X size={14} /> : <Plus size={14} />}
+            {showForm ? "Close Form" : "Create New Item"}
           </button>
         </div>
 
-        {/* Success Message */}
+        {/* NOTIFICATIONS */}
         {successMessage && (
-          <div className={`mb-6 border-2 px-6 py-4 rounded-lg animate-slideDown ${
-            successMessage.includes("✓")
-              ? "bg-green-100 border-green-400 text-green-700"
-              : "bg-red-100 border-red-400 text-red-700"
-          }`}>
-            {successMessage}
+          <div
+            className={`mb-8 flex items-center gap-3 px-6 py-4 rounded-[2rem] border animate-fadeIn ${
+              successMessage.includes("✓")
+                ? "bg-emerald-50 border-emerald-100 text-emerald-700"
+                : "bg-rose-50 border-rose-100 text-rose-700"
+            }`}
+          >
+            {successMessage.includes("✓") ? (
+              <CheckCircle2 size={18} />
+            ) : (
+              <AlertCircle size={18} />
+            )}
+            <span className="text-xs font-black uppercase tracking-widest">
+              {successMessage}
+            </span>
           </div>
         )}
 
-        {/* Add/Edit Food Form */}
+        {/* ADD/EDIT FORM */}
         {showForm && (
-          <div className="bg-white rounded-xl shadow-card p-8 mb-12 animate-slideDown">
-            <h2 className="text-2xl font-bold text-dark mb-6">
-              {editingId ? "✏️ Edit Food" : "➕ Add New Food"}
+          <div className="bg-white rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/50 p-8 md:p-12 mb-12 animate-slideDown">
+            <h2 className="text-2xl font-black text-slate-900 mb-8 tracking-tight">
+              {editingId ? "Edit Menu Item" : "Create Menu Item"}
             </h2>
+            <form onSubmit={handleSubmit} className="grid md:grid-cols-3 gap-8">
+              <div className="md:col-span-2 grid md:grid-cols-2 gap-6">
+                {/* Inputs */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">
+                    Item Name
+                  </label>
+                  <input
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="w-full bg-slate-50 border border-slate-100 px-5 py-3 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none transition-all font-bold text-slate-700"
+                    placeholder="e.g. Truffle Pizza"
+                  />
+                  {errors.name && (
+                    <p className="text-rose-500 text-[10px] font-bold ml-2">
+                      {errors.name}
+                    </p>
+                  )}
+                </div>
 
-            <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-6">
-              {/* Name */}
-              <div>
-                <label className="block text-sm font-medium text-dark mb-2">
-                  Food Name *
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="e.g., Margherita Pizza"
-                  className={`input-field ${
-                    errors.name ? "border-red-500 focus:border-red-500" : ""
-                  }`}
-                />
-                {errors.name && (
-                  <p className="text-red-500 text-sm mt-1">{errors.name}</p>
-                )}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">
+                    Price ($)
+                  </label>
+                  <input
+                    type="number"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleChange}
+                    className="w-full bg-slate-50 border border-slate-100 px-5 py-3 rounded-2xl focus:ring-2 focus:ring-orange-500 outline-none transition-all font-bold text-slate-700"
+                    placeholder="19.99"
+                  />
+                  {errors.price && (
+                    <p className="text-rose-500 text-[10px] font-bold ml-2">
+                      {errors.price}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">
+                    Category
+                  </label>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    className="w-full bg-slate-50 border border-slate-100 px-5 py-3 rounded-2xl outline-none font-bold text-slate-700"
+                  >
+                    <option value="popular">Popular</option>
+                    <option value="vegetarian">Vegetarian</option>
+                    <option value="non-vegetarian">Non-Vegetarian</option>
+                    <option value="drinks">Drinks</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">
+                    Rating (0-5)
+                  </label>
+                  <input
+                    type="number"
+                    name="rating"
+                    value={formData.rating}
+                    onChange={handleChange}
+                    className="w-full bg-slate-50 border border-slate-100 px-5 py-3 rounded-2xl outline-none font-bold text-slate-700"
+                    placeholder="4.8"
+                  />
+                  {errors.rating && (
+                    <p className="text-rose-500 text-[10px] font-bold ml-2">
+                      {errors.rating}
+                    </p>
+                  )}
+                </div>
+
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">
+                    Description
+                  </label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    rows={3}
+                    className="w-full bg-slate-50 border border-slate-100 px-5 py-3 rounded-2xl outline-none font-medium text-slate-600 resize-none"
+                    placeholder="Describe the ingredients and flavor profile..."
+                  />
+                  {errors.description && (
+                    <p className="text-rose-500 text-[10px] font-bold ml-2">
+                      {errors.description}
+                    </p>
+                  )}
+                </div>
+
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">
+                    Image URL
+                  </label>
+                  <input
+                    name="image"
+                    value={formData.image}
+                    onChange={handleChange}
+                    className="w-full bg-slate-50 border border-slate-100 px-5 py-3 rounded-2xl outline-none font-medium text-slate-600"
+                    placeholder="https://unsplash.com/..."
+                  />
+                  {errors.image && (
+                    <p className="text-rose-500 text-[10px] font-bold ml-2">
+                      {errors.image}
+                    </p>
+                  )}
+                </div>
               </div>
 
-              {/* Price */}
-              <div>
-                <label className="block text-sm font-medium text-dark mb-2">
-                  Price ($) *
-                </label>
-                <input
-                  type="number"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleChange}
-                  placeholder="12.99"
-                  step="0.01"
-                  className={`input-field ${
-                    errors.price ? "border-red-500 focus:border-red-500" : ""
-                  }`}
-                />
-                {errors.price && (
-                  <p className="text-red-500 text-sm mt-1">{errors.price}</p>
-                )}
-              </div>
-
-              {/* Category */}
-              <div>
-                <label className="block text-sm font-medium text-dark mb-2">
-                  Category
-                </label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  className="input-field"
-                >
-                  <option value="popular">Popular</option>
-                  <option value="vegetarian">Vegetarian</option>
-                  <option value="non-vegetarian">Non-Vegetarian</option>
-                  <option value="drinks">Drinks</option>
-                  <option value="others">Others</option>
-                </select>
-              </div>
-
-              {/* Rating */}
-              <div>
-                <label className="block text-sm font-medium text-dark mb-2">
-                  Rating (0-5) *
-                </label>
-                <input
-                  type="number"
-                  name="rating"
-                  value={formData.rating}
-                  onChange={handleChange}
-                  placeholder="4.5"
-                  min="0"
-                  max="5"
-                  step="0.1"
-                  className={`input-field ${
-                    errors.rating ? "border-red-500 focus:border-red-500" : ""
-                  }`}
-                />
-                {errors.rating && (
-                  <p className="text-red-500 text-sm mt-1">{errors.rating}</p>
-                )}
-              </div>
-
-              {/* Image URL */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-dark mb-2">
-                  Image URL 
-                </label>
-                <input
-                  type="url"
-                  name="image"
-                  value={formData.image}
-                  onChange={handleChange}
-                  placeholder="https://images.unsplash.com/..."
-                  className={`input-field ${
-                    errors.image ? "border-red-500 focus:border-red-500" : ""
-                  }`}
-                />
-                {errors.image && (
-                  <p className="text-red-500 text-sm mt-1">{errors.image}</p>
-                )}
-              </div>
-
-              {/* Description */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-dark mb-2">
-                  Description *
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Describe your food..."
-                  rows={3}
-                  className={`input-field resize-none ${
-                    errors.description
-                      ? "border-red-500 focus:border-red-500"
-                      : ""
-                  }`}
-                />
-                {errors.description && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.description}
-                  </p>
-                )}
-              </div>
-
-              {/* Image Preview */}
-              {formData.image && (
-                <div className="md:col-span-2">
-                  <p className="text-sm font-medium text-dark mb-2">
-                    Image Preview
-                  </p>
+              {/* Preview Sidebar */}
+              <div className="bg-slate-50 rounded-[2.5rem] p-6 border border-slate-100 flex flex-col items-center justify-center text-center">
+                {formData.image ? (
                   <img
                     src={formData.image}
-                    alt="Preview"
-                    className="w-32 h-32 object-cover rounded-lg"
-                    onError={(e) => {
-                      e.target.src =
-                        "https://via.placeholder.com/150?text=Invalid+URL";
-                    }}
+                    className="w-full aspect-square object-cover rounded-[2rem] mb-4 shadow-lg shadow-slate-200"
+                    onError={(e) =>
+                      (e.target.src =
+                        "https://via.placeholder.com/300?text=Invalid+Image")
+                    }
                   />
-                </div>
-              )}
+                ) : (
+                  <div className="w-full aspect-square bg-slate-200 rounded-[2rem] mb-4 flex items-center justify-center text-slate-400">
+                    <ImageIcon size={48} strokeWidth={1} />
+                  </div>
+                )}
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                  Live Preview
+                </p>
+                <h3 className="font-bold text-slate-900 mt-2">
+                  {formData.name || "Item Name"}
+                </h3>
+              </div>
 
-              {/* Submit Button */}
-              <div className="md:col-span-2 flex gap-4">
+              <div className="md:col-span-3 flex gap-4 pt-4">
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-500 transition-all disabled:opacity-50"
                 >
-                  {loading
-                    ? "Processing..."
-                    : editingId
-                    ? "Update Food"
-                    : "Add Food"}
-                </button>
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="flex-1 btn-outline"
-                >
-                  Cancel
+                  {loading ? (
+                    <Loader2 className="animate-spin mx-auto" />
+                  ) : editingId ? (
+                    "Save Changes"
+                  ) : (
+                    "Publish to Menu"
+                  )}
                 </button>
               </div>
             </form>
           </div>
         )}
 
-        {/* Loading State */}
-        {pageLoading && (
-          <div className="text-center py-12">
-            <p className="text-2xl">⏳ Loading foods...</p>
-          </div>
-        )}
-
-        {/* Foods List */}
-        {!pageLoading && (
-          <div className="bg-white rounded-xl shadow-card p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-dark">
-                📋 Food Items ({filteredFoods.length})
-              </h2>
+        {/* LIST SECTION */}
+        <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm p-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
+            <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+              Catalog{" "}
+              <span className="text-slate-300 font-medium">
+                ({filteredFoods.length})
+              </span>
+            </h2>
+            <div className="relative w-full md:w-80">
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                size={16}
+              />
               <input
-                type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search foods..."
-                className="input-field max-w-xs"
+                className="w-full bg-slate-50 border border-slate-100 pl-12 pr-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-orange-500 transition-all"
+                placeholder="Search item..."
               />
             </div>
-
-            {filteredFoods.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-bold text-dark">
-                        Name
-                      </th>
-                      <th className="px-4 py-3 text-left font-bold text-dark">
-                        Category
-                      </th>
-                      <th className="px-4 py-3 text-left font-bold text-dark">
-                        Price
-                      </th>
-                      <th className="px-4 py-3 text-left font-bold text-dark">
-                        Rating
-                      </th>
-                      <th className="px-4 py-3 text-left font-bold text-dark">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredFoods.map((food) => (
-                      <tr
-                        key={food._id}
-                        className="border-b border-gray-200 hover:bg-gray-50 transition-colors duration-300 animate-fadeIn"
-                      >
-                        <td className="px-4 py-3">
-                          <div className="flex gap-3 items-center">
-                            <img
-                              src={food.image}
-                              alt={food.name}
-                              className="w-12 h-12 object-cover rounded-lg"
-                              onError={(e) => {
-                                e.target.src =
-                                  "https://via.placeholder.com/50?text=No+Image";
-                              }}
-                            />
-                            <div>
-                              <p className="font-bold text-dark">
-                                {food.name}
-                              </p>
-                              <p className="text-gray-600 text-sm line-clamp-1">
-                                {food.description}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="bg-primary text-white px-3 py-1 rounded-full text-sm font-medium capitalize">
-                            {food.category}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="font-bold text-primary">
-                            ${food.price.toFixed(2)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="flex items-center gap-1">
-                            ⭐ {food.rating || 0}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleEdit(food)}
-                              className="text-blue-500 hover:text-blue-700 font-medium transition-colors duration-300"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDelete(food._id)}
-                              className="text-red-500 hover:text-red-700 font-medium transition-colors duration-300"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-2xl mb-4">😔</p>
-                <p className="text-gray-600">No foods found matching your search</p>
-              </div>
-            )}
           </div>
-        )}
 
-        {/* Admin Notes */}
-        <div className="mt-12 bg-green-100 border-2 border-green-400 rounded-lg p-6">
-          <h3 className="font-bold text-green-900 mb-3">✅ Backend Connected:</h3>
-          <ul className="text-green-800 space-y-2 text-sm">
-            <li>✓ All operations (ADD, UPDATE, DELETE, VIEW) connected to backend API</li>
-            <li>✓ Real-time data sync from MongoDB database</li>
-            <li>✓ Edit foods by clicking the "Edit" button in the table</li>
-            <li>✓ Delete foods by clicking the "Delete" button</li>
-            <li>✓ Search through foods using the search input</li>
-            <li>✓ All data persists in the database</li>
-          </ul>
+          {pageLoading ? (
+            <div className="py-20 flex justify-center">
+              <Loader2 className="animate-spin text-orange-500" size={32} />
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {filteredFoods.map((food) => (
+                <div
+                  key={food._id}
+                  className="group flex flex-col md:flex-row items-center justify-between p-4 bg-white border border-slate-50 rounded-[2rem] hover:border-orange-200 hover:shadow-xl hover:shadow-orange-500/5 transition-all"
+                >
+                  <div className="flex items-center gap-6 w-full">
+                    <img
+                      src={food.image}
+                      className="w-20 h-20 object-cover rounded-2xl"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h4 className="font-black text-slate-900">
+                          {food.name}
+                        </h4>
+                        <span className="bg-slate-100 text-slate-500 px-3 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter italic">
+                          {food.category}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 line-clamp-1 max-w-md">
+                        {food.description}
+                      </p>
+                      <div className="flex items-center gap-4 mt-2">
+                        <div className="flex items-center gap-1 text-orange-500 font-black text-xs">
+                          <DollarSign size={12} /> {food.price.toFixed(2)}
+                        </div>
+                        <div className="flex items-center gap-1 text-slate-400 font-bold text-[10px]">
+                          <Star
+                            size={12}
+                            className="text-amber-400 fill-amber-400"
+                          />{" "}
+                          {food.rating || "N/A"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 mt-4 md:mt-0">
+                    <button
+                      onClick={() => handleEdit(food)}
+                      className="w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-400 rounded-xl hover:bg-blue-50 hover:text-blue-500 transition-all"
+                    >
+                      <Edit3 size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(food._id)}
+                      className="w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-400 rounded-xl hover:bg-rose-50 hover:text-rose-500 transition-all"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

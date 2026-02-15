@@ -6,6 +6,7 @@ import {
   updateOrderStatus,
   deleteOrder,
 } from "./orders.controller";
+import { checkJWT } from "../../middlewares/auth.middleware";
 
 const router = Router();
 

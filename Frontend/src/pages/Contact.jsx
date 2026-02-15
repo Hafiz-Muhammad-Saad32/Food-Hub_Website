@@ -12,306 +12,169 @@ export default function Contact() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Form validation
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
-    }
-
+    if (!formData.name.trim()) newErrors.name = "Required";
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
+      newErrors.email = "Required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Invalid email format";
+      newErrors.email = "Invalid format";
     }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Phone number is required";
-    }
-
-    if (!formData.subject.trim()) {
-      newErrors.subject = "Subject is required";
-    }
-
-    if (!formData.message.trim()) {
-      newErrors.message = "Message is required";
-    } else if (formData.message.length < 10) {
-      newErrors.message = "Message must be at least 10 characters";
-    }
+    if (!formData.message.trim()) newErrors.message = "Required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle form submission
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-
     if (!validateForm()) return;
-
     setLoading(true);
-
-    // TODO: BACKEND API CALL HERE
-    // Example: const response = await fetch("/api/contact", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify(formData)
-    // });
-
-    // Simulate API delay
     setTimeout(() => {
-      console.log("Contact form submitted:", formData);
       setSuccess(true);
       setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
       setLoading(false);
-      setTimeout(() => setSuccess(false), 5000);
+      setTimeout(() => setSuccess(false), 4000);
     }, 1500);
   };
 
   return (
-    <div className="min-h-screen bg-light">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary to-secondary text-white py-16 md:py-24">
-        <div className="container-custom text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">Contact Us</h1>
-          <p className="text-lg md:text-xl opacity-90">
-            Get in touch with our team. We'd love to hear from you!
+    <div className="min-h-screen bg-white font-sans text-slate-900">
+      {/* 1. Header Section (Compact) */}
+      <section className="py-12 border-b border-slate-50 text-center">
+        <div className="max-w-3xl mx-auto px-6">
+          <span className="text-orange-500 font-bold uppercase tracking-wider text-xs bg-orange-50 px-3 py-1 rounded-full">
+            Help Center
+          </span>
+          <h1 className="text-4xl font-black mt-4 mb-3 tracking-tight">
+            Contact <span className="text-orange-500">Us.</span>
+          </h1>
+          <p className="text-slate-500 font-medium">
+            Have a question? We're here to help you 24/7.
           </p>
         </div>
       </section>
 
-      {/* Contact Information & Form */}
-      <section className="py-16">
-        <div className="container-custom">
-          <div className="grid md:grid-cols-2 gap-12">
-            {/* Contact Information */}
-            <div>
-              <h2 className="text-3xl font-bold text-dark mb-8">
-                Get In Touch
-              </h2>
+      {/* 2. Main Content Grid */}
+      <section className="py-12">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid md:grid-cols-12 gap-8 items-start">
+            {/* Contact Info (Left Side) */}
+            <div className="md:col-span-5 space-y-4">
+              <h2 className="text-2xl font-black italic mb-6">Get In Touch</h2>
 
-              {/* Email */}
-              <div className="card p-6 mb-6">
-                <div className="flex gap-4">
-                  <div className="text-3xl">📧</div>
-                  <div>
-                    <h3 className="text-lg font-bold text-dark">Email</h3>
-                    <a
-                      href="mailto:support@foodhub.com"
-                      className="text-primary hover:text-secondary transition-colors duration-300"
-                    >
-                      support@foodhub.com
-                    </a>
+              <div className="grid grid-cols-1 gap-3">
+                {[
+                  { icon: "📧", label: "Email", val: "support@foodhub.com" },
+                  { icon: "📞", label: "Phone", val: "+1 (555) 123-4567" },
+                  { icon: "📍", label: "Office", val: "123 Main St, City" },
+                ].map((item, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100"
+                  >
+                    <span className="text-2xl">{item.icon}</span>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">
+                        {item.label}
+                      </p>
+                      <p className="text-sm font-bold text-slate-700">
+                        {item.val}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
 
-              {/* Phone */}
-              <div className="card p-6 mb-6">
-                <div className="flex gap-4">
-                  <div className="text-3xl">📞</div>
-                  <div>
-                    <h3 className="text-lg font-bold text-dark">Phone</h3>
-                    <a
-                      href="tel:+1234567890"
-                      className="text-primary hover:text-secondary transition-colors duration-300"
-                    >
-                      +1 (555) 123-4567
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              {/* Address */}
-              <div className="card p-6 mb-6">
-                <div className="flex gap-4">
-                  <div className="text-3xl">📍</div>
-                  <div>
-                    <h3 className="text-lg font-bold text-dark">Address</h3>
-                    <p className="text-gray-600">
-                      123 Main Street<br />
-                      Your City, Country 12345
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Hours */}
-              <div className="card p-6">
-                <div className="flex gap-4">
-                  <div className="text-3xl">🕐</div>
-                  <div>
-                    <h3 className="text-lg font-bold text-dark">Hours</h3>
-                    <p className="text-gray-600">
-                      Monday - Sunday<br />
-                      Open 24/7
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Social Links */}
-              <div className="mt-8">
-                <h3 className="text-lg font-bold text-dark mb-4">Follow Us</h3>
-                <div className="flex gap-4">
-                  <a
-                    href="#"
-                    className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center text-xl hover:shadow-lg transition-all duration-300"
+              {/* Socials */}
+              <div className="pt-4 flex gap-3">
+                {["f", "𝕏", "📷", "in"].map((s, i) => (
+                  <button
+                    key={i}
+                    className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-orange-500 transition-colors"
                   >
-                    f
-                  </a>
-                  <a
-                    href="#"
-                    className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center text-xl hover:shadow-lg transition-all duration-300"
-                  >
-                    𝕏
-                  </a>
-                  <a
-                    href="#"
-                    className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center text-xl hover:shadow-lg transition-all duration-300"
-                  >
-                    📷
-                  </a>
-                  <a
-                    href="#"
-                    className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center text-xl hover:shadow-lg transition-all duration-300"
-                  >
-                    in
-                  </a>
-                </div>
+                    {s}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Contact Form */}
-            <div>
-              <div className="card p-8">
-                <h2 className="text-2xl font-bold text-dark mb-6">
-                  Send us a Message
-                </h2>
-
+            {/* Form (Right Side) */}
+            <div className="md:col-span-7">
+              <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
                 {success && (
-                  <div className="mb-6 bg-green-100 border-2 border-green-400 text-green-700 px-4 py-3 rounded-lg animate-slideDown">
-                    ✓ Thank you! We'll get back to you soon.
+                  <div className="mb-6 bg-green-50 text-green-600 p-4 rounded-xl text-sm font-bold border border-green-100 animate-pulse">
+                    ✓ Message sent successfully!
                   </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Name */}
-                  <div>
-                    <label className="block text-sm font-medium text-dark mb-2">
-                      Full Name
+                <form
+                  onSubmit={handleSubmit}
+                  className="grid grid-cols-2 gap-4"
+                >
+                  <div className="col-span-2 md:col-span-1">
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">
+                      Name
                     </label>
                     <input
-                      type="text"
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
+                      className="w-full mt-1 p-3 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20"
                       placeholder="John Doe"
-                      className={`input-field ${
-                        errors.name ? "border-red-500 focus:border-red-500" : ""
-                      }`}
                     />
                     {errors.name && (
-                      <p className="text-red-500 text-sm mt-1">{errors.name}</p>
-                    )}
-                  </div>
-
-                  {/* Email */}
-                  <div>
-                    <label className="block text-sm font-medium text-dark mb-2">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      placeholder="you@example.com"
-                      className={`input-field ${
-                        errors.email ? "border-red-500 focus:border-red-500" : ""
-                      }`}
-                    />
-                    {errors.email && (
-                      <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-                    )}
-                  </div>
-
-                  {/* Phone */}
-                  <div>
-                    <label className="block text-sm font-medium text-dark mb-2">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="+1 (555) 123-4567"
-                      className={`input-field ${
-                        errors.phone ? "border-red-500 focus:border-red-500" : ""
-                      }`}
-                    />
-                    {errors.phone && (
-                      <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
-                    )}
-                  </div>
-
-                  {/* Subject */}
-                  <div>
-                    <label className="block text-sm font-medium text-dark mb-2">
-                      Subject
-                    </label>
-                    <input
-                      type="text"
-                      name="subject"
-                      value={formData.subject}
-                      onChange={handleChange}
-                      placeholder="e.g., Feedback, Partnership, Support"
-                      className={`input-field ${
-                        errors.subject ? "border-red-500 focus:border-red-500" : ""
-                      }`}
-                    />
-                    {errors.subject && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.subject}
+                      <p className="text-red-500 text-[10px] mt-1 font-bold">
+                        {errors.name}
                       </p>
                     )}
                   </div>
 
-                  {/* Message */}
-                  <div>
-                    <label className="block text-sm font-medium text-dark mb-2">
+                  <div className="col-span-2 md:col-span-1">
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">
+                      Email
+                    </label>
+                    <input
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="w-full mt-1 p-3 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                      placeholder="you@email.com"
+                    />
+                    {errors.email && (
+                      <p className="text-red-500 text-[10px] mt-1 font-bold">
+                        {errors.email}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="col-span-2">
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">
                       Message
                     </label>
                     <textarea
                       name="message"
                       value={formData.message}
                       onChange={handleChange}
-                      placeholder="Tell us what's on your mind..."
                       rows={4}
-                      className={`input-field resize-none ${
-                        errors.message ? "border-red-500 focus:border-red-500" : ""
-                      }`}
+                      className="w-full mt-1 p-3 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 resize-none"
+                      placeholder="How can we help?"
                     />
                     {errors.message && (
-                      <p className="text-red-500 text-sm mt-1">
+                      <p className="text-red-500 text-[10px] mt-1 font-bold">
                         {errors.message}
                       </p>
                     )}
                   </div>
 
-                  {/* Submit Button */}
                   <button
-                    type="submit"
                     disabled={loading}
-                    className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+                    className="col-span-2 bg-orange-500 text-white font-black py-4 rounded-xl shadow-lg shadow-orange-100 hover:bg-orange-600 transition-all disabled:opacity-50"
                   >
                     {loading ? "Sending..." : "Send Message"}
                   </button>
@@ -322,44 +185,23 @@ export default function Contact() {
         </div>
       </section>
 
-      {/* Map Section (Placeholder) */}
-      <section className="py-16 bg-white">
-        <div className="container-custom">
-          <h2 className="text-3xl font-bold text-dark text-center mb-8">
-            Find Us On Map
-          </h2>
-          <div className="w-full h-96 bg-gray-200 rounded-xl shadow-card flex items-center justify-center">
-            <p className="text-gray-600 text-lg">📍 Map Integration Coming Soon</p>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section className="py-16">
-        <div className="container-custom">
-          <h2 className="section-title">Frequently Asked Questions</h2>
-          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+      {/* 3. FAQ Section (Tighter) */}
+      <section className="py-12 bg-slate-50 rounded-[2rem] mx-4">
+        <div className="max-w-4xl mx-auto px-6">
+          <h2 className="text-center text-2xl font-black mb-8 italic">FAQs</h2>
+          <div className="grid md:grid-cols-2 gap-4">
             {[
-              {
-                q: "What are your delivery hours?",
-                a: "We're open 24/7 and deliver whenever you want!",
-              },
-              {
-                q: "Do you offer group discounts?",
-                a: "Yes! Contact us for special bulk order pricing.",
-              },
-              {
-                q: "What payment methods do you accept?",
-                a: "We accept all major credit cards, digital wallets, and cash.",
-              },
-              {
-                q: "How quickly do you deliver?",
-                a: "Typically within 30-45 minutes depending on your location.",
-              },
-            ].map((faq, idx) => (
-              <div key={idx} className="card p-6">
-                <h3 className="font-bold text-dark mb-2">{faq.q}</h3>
-                <p className="text-gray-600">{faq.a}</p>
+              { q: "Delivery hours?", a: "24/7 service always." },
+              { q: "Payment methods?", a: "Cards, Wallets, Cash." },
+              { q: "Speed?", a: "Usually 30-45 mins." },
+              { q: "Support?", a: "Live chat available." },
+            ].map((faq, i) => (
+              <div
+                key={i}
+                className="bg-white p-5 rounded-2xl border border-slate-200/50"
+              >
+                <h4 className="font-bold text-sm mb-1">{faq.q}</h4>
+                <p className="text-slate-500 text-xs">{faq.a}</p>
               </div>
             ))}
           </div>

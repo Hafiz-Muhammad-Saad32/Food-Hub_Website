@@ -13,7 +13,6 @@ export const getUserAddresses = async (userId: string) => {
   });
 };
 
-// For admin 
 export const getAllAddresses = async () => {
   return await AddressModel.find({ deletedAt: null })
     .populate("user");

@@ -2,166 +2,201 @@ import { Request, Response } from "express";
 import Food from "../foods/foods.model";
 import * as orderService from "./orders.service";
 import {
-    createOrderSchema,
-    updateOrderStatusSchema,
-    orderParamSchema,
+  createOrderSchema,
+  updateOrderStatusSchema,
+  orderParamSchema,
 } from "./orders.validation";
+import { sendOrderEmail } from "../../utils/sendEmail";
+import usersModel from "../users/users.model";
+import { log } from "console";
 
 export const createOrder = async (req: Request, res: Response) => {
-    const { success, error, data } = createOrderSchema.safeParse(req.body);
+  const { success, error, data } = createOrderSchema.safeParse(req.body);
 
-    if (!success) {
-        return res.status(400).json({
-            error: error.issues[0].message,
+  if (!success) {
+    return res.status(400).json({
+      error: error.issues,
+    });
+  }
+
+  try {
+    // Calculate total price from items
+    let totalPrice = 0;
+    for (let item of data.items) {
+      const food = await Food.findById(item.food);
+      if (!food) {
+        return res.status(404).json({
+          success: false,
+          message: `Food with ID ${item.food} not found`,
         });
+      }
+      totalPrice += food.price * item.quantity;
     }
 
-    try {
-        // Calculate total price from items
-        let totalPrice = 0;
-        for (let item of data.items) {
-            const food = await Food.findById(item.food);
-            if (!food) {
-                return res.status(404).json({
-                    success: false,
-                    message: `Food with ID ${item.food} not found`
-                });
-            }
-            totalPrice += food.price * item.quantity;
-        }
+    const order = await orderService.createOrder({
+      ...data,
+      user: (req as any).user?._id,
+      totalPrice,
+    });
 
-        const order = await orderService.createOrder({
-            ...data,
-            user: (req as any).user?.id,
-            totalPrice,
-        });
+    const user = await usersModel.findById((req as any).user._id);
 
-        return res.status(201).json({
-            success: true,
-            message: "Order created successfully",
-            data: order,
-        });
-    } catch (err: any) {
-        return res.status(500).json({
-            success: false,
-            message: "internal server error " + err.message
-        });
+    if (order && user?.email) {
+      // console.log(order);
+      await sendOrderEmail(user.email, order);
     }
+
+    return res.status(201).json({
+      success: true,
+      message: "Order created successfully",
+      data: order,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: "internal server error " + err.message,
+    });
+  }
 };
 
+export const getAllOrders = async (req: Request, res: Response) => {
+  // Parse and validate query
+  const parsed = updateOrderStatusSchema.safeParse(req.query);
 
-export const getAllOrders = async (_: Request, res: Response) => {
-    try {
-        const orders = await orderService.getAllOrders();
+  if (!parsed.success) {
+    return res.status(400).json({ message: "Invalid status filter" });
+  }
 
-        if (orders.length === 0) {
-            return res.status(200).json({
-                success: true,
-                message: "No orders available",
-                data: [],
-            });
-        }
+  const filter: any = {};
+  if (parsed.data.status) {
+    filter.status = parsed.data.status;
+  }
 
-        return res.status(200).json({
-            success: true,
-            message: "Orders fetched successfully",
-            data: orders,
-        });
+  try {
+    const orders = await orderService.getAllOrders(filter);
 
-    } catch (err: any) {
-        return res.status(500).json({ success: false, message: "internal server error " + err.message });
+    if (orders.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No orders available",
+        data: [],
+      });
     }
+
+    return res.status(200).json({
+      success: true,
+      message: "Orders fetched successfully",
+      data: orders,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: "internal server error " + err.message,
+    });
+  }
 };
 
 export const getOrderById = async (req: Request, res: Response) => {
-    const parsed = orderParamSchema.safeParse(req.params);
+  const parsed = orderParamSchema.safeParse(req.params);
 
-    if (!parsed.success) {
-        return res.status(400).json({
-            error: parsed.error.issues[0].message,
-        });
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: parsed.error.issues[0].message,
+    });
+  }
+
+  try {
+    const order = await orderService.getOrderById(parsed.data.id);
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
     }
 
-    try {
-        const order = await orderService.getOrderById(parsed.data.id);
-
-        if (!order) {
-            return res.status(404).json({ message: "Order not found" });
-        }
-
-        if (order?.deletedAt != null) {
-            return res.status(404).json({
-                message: "Order has deleted",
-            });
-        }
-
-        return res.json({ success: true, data: order });
-    } catch (err: any) {
-        return res.status(500).json({ success: false, message: "internal server error " + err.message });
+    if (order?.deletedAt != null) {
+      return res.status(404).json({
+        message: "Order has deleted",
+      });
     }
+
+    return res.json({ success: true, data: order });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: "internal server error " + err.message,
+    });
+  }
 };
 
 export const updateOrderStatus = async (req: Request, res: Response) => {
-    const paramParse = orderParamSchema.safeParse(req.params);
-    const bodyParse = updateOrderStatusSchema.safeParse(req.body);
+  const paramParse = orderParamSchema.safeParse(req.params);
+  const bodyParse = updateOrderStatusSchema.safeParse(req.body);
 
-    if (!paramParse.success || !bodyParse.success) {
-        return res.status(400).json({ message: "Invalid data" });
+  // console.log("BODY:", req.body);
+  // console.log("STATUS:", req.body.status);
+  // console.log("TYPE:", typeof req.body.status);
+
+  if (!paramParse.success || !bodyParse.success) {
+    return res.status(400).json({ message: "Invalid data" });
+  }
+
+  try {
+    const order = await orderService.updateOrderStatus(
+      paramParse.data.id,
+      bodyParse.data.status,
+    );
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
     }
 
-    try {
-        const order = await orderService.updateOrderStatus(
-            paramParse.data.id,
-            bodyParse.data.status
-        );
-
-        if (!order) {
-            return res.status(404).json({
-                message: "Order not found",
-            });
-        }
-
-        if (order?.deletedAt != null) {
-            return res.status(404).json({
-                message: "Order has deleted",
-            });
-        }
-
-        return res.status(200).json({
-            success: true,
-            message: "Order status updated successfully",
-            data: order,
-        });
-    } catch (err: any) {
-        return res.status(500).json({ success: false, message: "internal server error " + err.message });
+    if (order?.deletedAt != null) {
+      return res.status(404).json({
+        message: "Order has deleted",
+      });
     }
+
+    return res.status(200).json({
+      success: true,
+      message: "Order status updated successfully",
+      data: order,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: "internal server error " + err.message,
+    });
+  }
 };
 
 export const deleteOrder = async (req: Request, res: Response) => {
-    const parsed = orderParamSchema.safeParse(req.params);
+  const parsed = orderParamSchema.safeParse(req.params);
 
-    if (!parsed.success) {
-        return res.status(400).json({
-            error: parsed.error.issues[0].message,
-        });
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: parsed.error.issues[0].message,
+    });
+  }
+
+  try {
+    const order = await orderService.softDeleteOrder(parsed.data.id);
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
     }
 
-    try {
-        const order = await orderService.softDeleteOrder(parsed.data.id);
-
-        if (!order) {
-            return res.status(404).json({
-                message: "Order not found",
-            });
-        }
-
-        return res.json({
-            success: true,
-            message: "Order deleted softly",
-            data: order,
-        });
-
-    } catch (err: any) {
-        return res.status(500).json({ success: false, message: "internal server error " + err.message });
-    }
+    return res.json({
+      success: true,
+      message: "Order deleted softly",
+      data: order,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: "internal server error " + err.message,
+    });
+  }
 };

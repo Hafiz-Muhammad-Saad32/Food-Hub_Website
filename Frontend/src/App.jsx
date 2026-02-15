@@ -2,7 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import AdminRoute from "./auth/AdminRoute";
+// import AdminRoute from "./auth/AdminRoute";
+import { useToast } from "./context/ToastContext";
 
 // Components
 import Navbar from "./components/Navbar";
@@ -23,8 +24,14 @@ import Cart from "./cart/Cart";
 import FoodForm from "./admin/FoodForm";
 import AdminLogin from "./auth/AdminLogin";
 import ProtectedRoute from "./auth/ProtectedRoute";
+import OrderPage from "./pages/OrderPage";
+import AdminNavbar from "./admin/AdminNavbar";
+import AdminOrders from "./admin/AdminOrders";
+import AdminUsers from "./admin/AdminUsers";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 
 function App() {
+  const showToast = useToast();
   window.addEventListener("beforeunload", () => {
     localStorage.clear(); // 🔥 clears everything
   });
@@ -48,7 +55,10 @@ function App() {
   const handleLogin = (userData) => {
     localStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
+    showToast(`Welcome back, Great to see you again!`, "success");
   };
+
+  // console.log(user);
 
   const handleLogout = () => {
     // Clear auth info
@@ -57,6 +67,7 @@ function App() {
     setCartItems([]);
     setUser(null);
     navigate("/");
+    showToast("Logged out successfully. See you soon!", "success");
   };
 
   // Function to add item to cart
@@ -98,11 +109,15 @@ function App() {
 
   return (
     <div className="flex flex-col min-h-screen bg-light">
-      <Navbar
-        cartCount={cartItems.length}
-        user={user}
-        handleLogout={handleLogout}
-      />
+      {user?.role === "admin" ? (
+        <AdminNavbar user={user} handleLogout={handleLogout} />
+      ) : (
+        <Navbar
+          cartCount={cartItems.length}
+          user={user}
+          handleLogout={handleLogout}
+        />
+      )}
 
       <main className="flex-grow">
         <Routes>
@@ -113,10 +128,20 @@ function App() {
           />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/admin" element={<AdminLogin />} />
+
+          <Route
+            path="/order"
+            element={
+              <ProtectedRoute>
+                <OrderPage />
+              </ProtectedRoute>
+            }
+          />
+
 
           {/* Auth Routes */}
           <Route path="/login" element={<Login handleLogin={handleLogin} />} />
+          <Route path="/verify-email/:token" element={<VerifyEmailPage/>} />
           <Route
             path="/signup"
             element={<Signup handleLogin={handleLogin} />}
@@ -143,10 +168,30 @@ function App() {
           <Route
             path="/admin/foods"
             element={
-              <AdminRoute>
+              <ProtectedRoute>
                 <FoodForm foods={foods} setFoods={setFoods} />
-              </AdminRoute>
+              </ProtectedRoute>
             }
+          />
+          <Route
+            path="/admin/orders"
+            element={
+              <ProtectedRoute>
+                <AdminOrders />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <AdminUsers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={<AdminLogin handleLogin={handleLogin} />}
           />
         </Routes>
       </main>
