@@ -5,6 +5,7 @@ import {
   updateAddressSchema,
   addressParamSchema,
 } from "./address.validation";
+import { log } from "console";
 
 // CREATE ADDRESS
 export const createAddress = async (req: Request, res: Response) => {
@@ -13,7 +14,7 @@ export const createAddress = async (req: Request, res: Response) => {
   if (!success) {
     return res.status(400).json({
       success: false,
-      error: error.issues[0].message,
+      error: error.issues,
     });
   }
 
@@ -36,6 +37,8 @@ export const createAddress = async (req: Request, res: Response) => {
       data: address,
     });
   } catch (err: any) {
+    console.log(err);
+    
     return res.status(500).json({
       success: false,
       message: "Internal server error: " + err.message,
@@ -69,6 +72,8 @@ export const getAllUserAddress = async (req: Request, res: Response) => {
       data: addresses,
     });
   } catch (err: any) {
+    console.log(err);
+    
     return res.status(500).json({
       success: false,
       message: "Internal server error: " + err.message,
@@ -97,6 +102,9 @@ export const getAddressById = async (req: Request, res: Response) => {
     }
     const address = await addressService.getAddressById(parsed.data.id);
 
+    console.log(parsed.data.id);
+    
+
     if (!address) {
       return res.status(404).json({
         success: false,
@@ -118,6 +126,8 @@ export const getAddressById = async (req: Request, res: Response) => {
       data: address,
     });
   } catch (err: any) {
+    console.log(err);
+    
     return res.status(500).json({
       success: false,
       message: "Internal server error: " + err.message,

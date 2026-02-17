@@ -2,6 +2,8 @@ import axios from "axios";
 
 const API_BASE_URL = "http://localhost:3000/api";
 
+// const token = localStorage.getItem("authToken");
+
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -48,7 +50,21 @@ export const foodAPI = {
 };
 
 //////////////////////////////////////////////////////
-// 📍 ADDRESS API
+// 📍 ADDRESS API - Saad
+//////////////////////////////////////////////////////
+
+// export const addressAPI = {
+//   getUserAddresses: () => apiClient.get("/address"),
+
+//   getAddressById: (id) => apiClient.get(`/address/${id}`),
+
+//   createAddress: (data) => apiClient.post("/address", data),
+
+//   updateAddress: (id, data) => apiClient.patch(`/address/${id}`, data),
+
+//   deleteAddress: (id) => apiClient.delete(`/address/${id}`),
+// };
+
 //////////////////////////////////////////////////////
 
 export const addressAPI = {

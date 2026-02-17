@@ -4,7 +4,7 @@ const addressSchema = new Schema(
   {
     user: {
       type: Types.ObjectId,
-      ref: "User",
+      ref: "Users",
       required: true,
     },
     city: {

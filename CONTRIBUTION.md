@@ -22,18 +22,18 @@ Work was divided based on **complete feature ownership** and **frontend–backen
 - ✅ Environment configuration (.env usage)
 
 #### 🔐 Authentication (Auth Feature)
-- User registration & login
-- JWT access token generation and verification
-- Password hashing using bcrypt
-- Auth routes, controllers, services
-- Zod validation for auth inputs
-- Auth middleware (protected routes)
+- ✅ User registration & login
+- ✅ JWT access token generation and verification
+- ✅ Password hashing using bcrypt
+- ✅ Auth routes, controllers, services
+- ✅ Zod validation for auth inputs
+- ✅ Auth middleware (protected routes)
 
 #### 👤 Users Feature
-- User CRUD operations
-- User Mongoose schema
-- User validation using Zod
-- User routes, controllers, services
+- ✅ User CRUD operations
+- ✅ User Mongoose schema
+- ✅ User validation using Zod
+- ✅ User routes, controllers, services
 
 #### ⚙️ Core Infrastructure
 - Designed **feature-based MVC architecture**
@@ -42,6 +42,11 @@ Work was divided based on **complete feature ownership** and **frontend–backen
 - Shared utilities (JWT, bcrypt helpers)
 - Project setup & folder structure
 - Code organization and best practices
+
+#### 🛡️ Admin Feature
+- Admin-specific routes and controllers
+- Role-based admin middleware
+- Admin validation logic
 
 ---
 
@@ -78,11 +83,6 @@ Work was divided based on **complete feature ownership** and **frontend–backen
 - Address Mongoose schema
 - Address validation (Zod)
 - Address routes, controllers, services
-
-#### 🛡️ Admin Feature
-- Admin-specific routes and controllers
-- Role-based admin middleware
-- Admin validation logic
 
 ---
 
