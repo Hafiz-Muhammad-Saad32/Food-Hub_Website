@@ -1,87 +1,74 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "../context/ToastContext";
 
-export default function FoodCard({ food, onAddToCart, onOrderNow }) {
+export default function FoodCard({ food, onAddToCart }) {
+  const navigate = useNavigate();
+  const showToast = useToast();
   const [isAdded, setIsAdded] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
 
-  const handleAddToCart = async () => {
-    if (!onAddToCart) return;
-    try {
-      setIsAdding(true);
-      const result = await onAddToCart(food);
-      if (result) {
-        setIsAdded(true);
-        setTimeout(() => setIsAdded(false), 2000);
-      }
-    } catch (err) {
-      console.error("Add to cart failed:", err);
-    } finally {
-      setIsAdding(false);
-    }
-  };
-
-  const handleOrderNow = () => {
-    if (onOrderNow) {
-      onOrderNow(food);
-      return;
-    }
-    handleAddToCart();
+  const handleAddToCart = () => {
+    onAddToCart(food);
+    setIsAdded(true);
+    setTimeout(() => setIsAdded(false), 2000);
   };
 
   return (
-    <div className="card overflow-hidden group h-full flex flex-col">
-      {/* Image Container */}
-      <div className="relative overflow-hidden h-48 bg-gray-200">
+    <div className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden group hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 flex flex-col h-full">
+      
+      {/* 1. Image Area (Sleeker Height) */}
+      <div className="relative h-44 overflow-hidden bg-slate-100">
         <img
           src={food.image}
-          alt={food.name || "Food"}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          alt={food.name}
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
         />
-        {/* Category Badge */}
-        <div className="absolute top-3 right-3 bg-primary text-white px-3 py-1 rounded-full text-xs font-semibold uppercase">
-          {food.category || "N/A"}
-        </div>
-        {/* Rating Badge */}
-        <div className="absolute top-3 left-3 bg-yellow-400 text-dark px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-          ⭐ {food.rating || 0}
+        
+        {/* Badges - Smaller and cleaner */}
+        <div className="absolute top-3 inset-x-3 flex justify-between items-start">
+          <span className="bg-white/90 backdrop-blur-md text-slate-900 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm">
+            ⭐ {food.rating || "4.5"}
+          </span>
+          <span className="bg-orange-500 text-white px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-lg shadow-orange-500/20">
+            {food.category || "Main"}
+          </span>
         </div>
       </div>
 
-      {/* Content Container */}
-      <div className="p-4 flex-grow flex flex-col">
-        {/* Title */}
-        <h3 className="text-lg font-bold text-dark mb-1 line-clamp-2">
-          {food.name || "Unnamed Food"}
-        </h3>
-
-        {/* Description */}
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2 flex-grow">
-          {food.description || "No description"}
-        </p>
-
-        {/* Price */}
-        <div className="mb-4">
-          <span className="text-2xl font-bold text-primary">
-            ${food.price?.toFixed(2) || "0.00"}
+      {/* 2. Content Area (Tightened Padding) */}
+      <div className="p-5 flex-grow flex flex-col">
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="text-md font-black text-slate-900 leading-tight line-clamp-1">
+            {food.name}
+          </h3>
+          <span className="text-orange-500 font-black text-sm ml-2">
+            ${food.price?.toFixed(2)}
           </span>
         </div>
 
-        {/* Buttons */}
-        <div className="flex gap-2">
+        <p className="text-xs text-slate-400 font-medium leading-relaxed line-clamp-2 mb-4 flex-grow">
+          {food.description || "Fresh ingredients, expertly prepared for your enjoyment."}
+        </p>
+
+        {/* 3. Actions (Mini Buttons) */}
+        <div className="flex gap-2 mt-auto">
           <button
             onClick={handleAddToCart}
-            disabled={isAdding}
-            className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all duration-300 ${
-              isAdded
-                ? "bg-green-500 text-white"
-                : "btn-primary"
-            } ${isAdding ? "opacity-60 cursor-wait" : ""}`}
+            className={`flex-[2] py-2.5 rounded-xl text-xs font-black transition-all duration-300 flex items-center justify-center gap-2 ${
+              isAdded 
+                ? "bg-green-500 text-white shadow-lg shadow-green-100" 
+                : "bg-slate-900 text-white hover:bg-orange-500 shadow-lg shadow-slate-200"
+            }`}
           >
-            {isAdding ? "Adding..." : isAdded ? "✓ Added" : "🛒 Add"}
+            {isAdded ? "✓ Added" : "🛒 Add to Cart"}
           </button>
-          <button onClick={handleOrderNow} className="flex-1 btn-outline">
-            Order Now
-          </button>
+
+          {/* <button 
+            onClick={() => navigate("/cart")}
+            className="flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 border border-slate-100 hover:bg-slate-50 transition-colors"
+          >
+            Details
+          </button> */}
         </div>
       </div>
     </div>

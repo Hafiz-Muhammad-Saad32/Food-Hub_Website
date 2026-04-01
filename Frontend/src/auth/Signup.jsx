@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 // import api from "../api/axios";
 import { apiClient } from "../services/api";
+import { useToast } from "../context/ToastContext";
 
 import {
   User,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react"; // Optional: npm install lucide-react
 
 export default function Signup() {
+  const showToast = useToast();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -50,11 +52,13 @@ export default function Signup() {
       });
 
       // Store user info in localStorage
-      localStorage.setItem("userSignUpData", JSON.stringify(response.data.data));
+      // localStorage.setItem("userSignUpData", JSON.stringify(response.data.data));
 
-      console.log("user created ", response.data.data);
-
-      navigate("/login"); // redirect to home page
+      // console.log("user created ", response.data.data);
+      showToast("User created successfully", "success");
+      setTimeout(() => {
+        navigate("/login"); // redirect to home page
+      }, 4000);
     } catch (error) {
       const data = error?.response?.data;
 

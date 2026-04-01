@@ -1,50 +1,74 @@
 import { useState, useEffect, useMemo } from "react";
 import FoodCard from "../components/FoodCard";
-import SearchBar from "../components/SearchBar";
+// import SearchBar from "../components/SearchBar";
 import { foodAPI, cartAPI } from "../services/api";
-// import api from "../api/axios";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useToast } from "../context/ToastContext"; // Ensure path is correct
 
-import { useNavigate } from "react-router-dom";
-
-// Categories constant
 const categories = [
-  { id: "popular", label: "Popular" },
-  { id: "vegetarian", label: "Vegetarian" },
-  { id: "non-vegetarian", label: "Non-Vegetarian" },
-  { id: "drinks", label: "Drinks" },
-  { id: "others", label: "Others" },
+  { id: "Pizza", label: "Pizza", emoji: "🍕" },
+  { id: "Burger", label: "Burger", emoji: "🍔" },
+  { id: "Sides", label: "Sides", emoji: "🍟" },
+  { id: "Salad", label: "Salad", emoji: "🥗" },
+  { id: "Desert", label: "Desert", emoji: "🍰" },
+  { id: "Beverage", label: "Drinks", emoji: "🥤" },
 ];
 
-export default function Home({ onCartChanged, user }) {
+export default function Home({ addToCart, user }) {
+  const showToast = useToast(); // Initialize the toast function
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const initialCategory = searchParams.get("category") || "all";
+  const initialPage = parseInt(searchParams.get("page")) || 1;
+
   const [foods, setFoods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+  const [page, setPage] = useState(initialPage);
+  const [totalPages, setTotalPages] = useState(1);
   const navigate = useNavigate();
 
-  // Fetch foods from backend
+  useEffect(() => {
+    setSearchParams({
+      category: selectedCategory,
+      page: page,
+    });
+  }, [selectedCategory, page]);
+
   useEffect(() => {
     const fetchFoods = async () => {
       try {
         setLoading(true);
-        const response = await foodAPI.getAllFoods();
+        // const response = await foodAPI.getAllFoods(page, 8);
+        const response = await foodAPI.getAllFoods(page, 8, selectedCategory);
         setFoods(response.data.data || []);
+        setTotalPages(response.data.pagination.pages);
         setError(null);
       } catch (err) {
-        console.error("Error fetching foods:", err);
         setError("Failed to load foods. Please try again.");
-        setFoods([]);
       } finally {
         setLoading(false);
       }
     };
-
     fetchFoods();
-  }, []);
+  }, [page, selectedCategory]);
 
-  // Filter foods based on search and category
+  // const filteredFoods = useMemo(() => {
+  //   return foods.filter((food) => {
+  //     const matchesSearch =
+  //       (food.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //       (food.description || "")
+  //         .toLowerCase()
+  //         .includes(searchTerm.toLowerCase());
+  //     const matchesCategory =
+  //       selectedCategory === "all" || food.category === selectedCategory;
+
+  //     return matchesSearch && matchesCategory;
+  //   });
+  // }, [foods, searchTerm, selectedCategory]);
+
   const filteredFoods = useMemo(() => {
     return foods.filter((food) => {
       const matchesSearch =
@@ -53,8 +77,11 @@ export default function Home({ onCartChanged, user }) {
           .toLowerCase()
           .includes(searchTerm.toLowerCase());
 
+      // console.log(food.category);
+
       const matchesCategory =
-        selectedCategory === "all" || food.category === selectedCategory;
+        selectedCategory === "all" ||
+        (food.category || "").toLowerCase() === selectedCategory.toLowerCase();
 
       return matchesSearch && matchesCategory;
     });
@@ -64,228 +91,164 @@ export default function Home({ onCartChanged, user }) {
     try {
       const token = localStorage.getItem("authToken");
       if (!token) {
-        alert("Please login first");
-        return false;
+        // alert("Please login first");
+        showToast("Please login to start ordering!", "error");
+        return;
       }
-
-      // userId ko send karne ki zarurat nahi, server JWT se le lega
       await cartAPI.addToCart(food._id, 1);
-
-      // fetch cart if you have cart state
-      if (onCartChanged) {
-        await onCartChanged();
-      }
-      alert(`${food.name} added to cart!`);
-      return true;
+      // alert(`${food.name} added to cart!`);
+      showToast(`${food.name} added to cart successfully!`, "success");
     } catch (err) {
-      console.error("Add to cart error:", err);
-      alert("Failed to add to cart");
-      return false;
-    }
-  };
-
-  const handleOrderNow = async (food) => {
-    const ok = await handleAddToCart(food);
-    if (ok) {
-      navigate("/cart");
+      // alert("Failed to add to cart");
+      showToast(`Failed to add to cart`, "error");
     }
   };
 
   return (
-    <div className="min-h-screen bg-light">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary to-secondary text-white py-16 md:py-24">
-        <div className="container-custom text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">
-            🍽️ Welcome to FoodHub
-          </h1>
-          <p className="text-lg md:text-xl mb-8 opacity-90">
-            Delicious food delivered fast, fresh, and hot!
-          </p>
+    <div className="min-h-screen bg-[#fafafa] font-sans text-slate-900">
+      {/* --- HERO: Visual & Friendly --- */}
+      <section className="px-4 pt-10 pb-6">
+        <div className="container-custom bg-gradient-to-br from-orange-400 to-rose-500 rounded-[2.5rem] p-8 md:p-16 text-white relative overflow-hidden shadow-2xl shadow-orange-200">
+          <div className="relative z-10 max-w-xl text-center md:text-left">
+            <h1 className="text-5xl md:text-7xl font-black leading-tight mb-4 tracking-tight">
+              Hungry? <br />
+              <span className="text-yellow-300">We got you.</span>
+            </h1>
+            <p className="text-lg md:text-xl opacity-90 font-medium mb-8">
+              The fastest delivery in the city, with the freshest ingredients.
+            </p>
+            {/* <div className="bg-white rounded-2xl p-1 shadow-xl">
+              <SearchBar onSearch={setSearchTerm} />
+            </div> */}
+          </div>
+          {/* Decorative Circle */}
+          <div className="absolute -right-20 -top-20 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
         </div>
       </section>
 
-      {/* Search Section */}
-      <section className="py-12">
+      {/* --- CATEGORIES: Pills Style --- */}
+      <section className="py-8">
         <div className="container-custom">
-          <SearchBar onSearch={setSearchTerm} />
-        </div>
-      </section>
-
-      {/* Category Filter Section */}
-      <section className="py-8 bg-white shadow-card">
-        <div className="container-custom">
-          <h2 className="text-2xl font-bold text-dark mb-6">
-            Browse Categories
-          </h2>
-          <div className="flex flex-wrap gap-3 md:gap-4">
+          <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-4">
             <button
               onClick={() => setSelectedCategory("all")}
-              className={`px-6 py-2 rounded-full font-medium transition-all duration-300 ${
+              className={`px-8 py-3 rounded-2xl font-bold transition-all whitespace-nowrap ${
                 selectedCategory === "all"
-                  ? "bg-primary text-white shadow-lg"
-                  : "bg-gray-200 text-dark hover:bg-gray-300"
+                  ? "bg-slate-900 text-white shadow-xl scale-105"
+                  : "bg-white text-slate-500 hover:bg-slate-100 shadow-sm"
               }`}
             >
-              All Items
+              All ✨
             </button>
-            {categories.map((category) => (
+            {categories.map((cat) => (
               <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`px-6 py-2 rounded-full font-medium transition-all duration-300 ${
-                  selectedCategory === category.id
-                    ? "bg-primary text-white shadow-lg"
-                    : "bg-gray-200 text-dark hover:bg-gray-300"
+                key={cat.id}
+                // onClick={() => setSelectedCategory(cat.id)}
+                onClick={() => {
+                  setSelectedCategory(cat.id);
+                  setPage(1);
+                }}
+                className={`px-8 py-3 rounded-2xl font-bold transition-all whitespace-nowrap flex items-center gap-2 ${
+                  selectedCategory === cat.id
+                    ? "bg-orange-500 text-white shadow-xl scale-105"
+                    : "bg-white text-slate-500 hover:bg-slate-100 shadow-sm"
                 }`}
               >
-                {category.label}
+                <span>{cat.emoji}</span> {cat.label}
               </button>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Foods Grid Section */}
-      <section className="py-16">
+      {/* --- FOOD GRID --- */}
+      <section className="pb-20">
         <div className="container-custom">
-          <h2 className="section-title">
-            {searchTerm ? "Search Results" : "Our Menu"}
-          </h2>
+          <div className="flex items-center justify-between mb-8 px-2">
+            <h2 className="text-3xl font-black tracking-tight italic">
+              {searchTerm ? "Results Found" : "Main Menu"}
+            </h2>
+            <div className="h-1 flex-grow mx-4 bg-slate-100 rounded-full"></div>
+          </div>
 
-          {/* Loading State */}
-          {loading && (
-            <div className="text-center py-16">
-              <p className="text-2xl">⏳ Loading foods...</p>
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {[...Array(4)].map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white h-80 rounded-[2rem] animate-pulse"
+                ></div>
+              ))}
             </div>
-          )}
-
-          {/* Error State */}
-          {error && !loading && (
-            <div className="text-center py-16 bg-red-100 rounded-lg">
-              <p className="text-red-600 text-xl mb-4">{error}</p>
-              <button
-                onClick={() => window.location.reload()}
-                className="btn-primary"
-              >
-                Retry
-              </button>
-            </div>
-          )}
-
-          {/* Foods Grid */}
-          {!loading && !error && filteredFoods.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredFoods.map((food, index) => (
+          ) : filteredFoods.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {filteredFoods.map((food) => (
                 <div
                   key={food._id}
-                  className="animate-fadeIn"
-                  style={{
-                    animation: `fadeIn 0.5s ease-out ${index * 0.05}s both`,
-                  }}
+                  className="transition-transform duration-300 hover:-translate-y-2"
                 >
-                  {/* <FoodCard
-                    food={food}
-                    onAddToCart={() => handleAddToCart(food)}
-                  /> */}
-                  <FoodCard
-                    key={food._id}
-                    food={food}
-                    onAddToCart={handleAddToCart}
-                    onOrderNow={handleOrderNow}
-                  />
+                  <FoodCard food={food} onAddToCart={handleAddToCart} />
                 </div>
               ))}
             </div>
-          ) : !loading && !error ? (
-            <div className="text-center py-16">
-              <p className="text-4xl mb-4">😔</p>
-              <h3 className="text-2xl font-bold text-dark mb-2">
-                No Foods Found
+          ) : (
+            <div className="text-center py-20 bg-white rounded-[3rem] border-4 border-dashed border-slate-100">
+              <span className="text-6xl">🍕</span>
+              <h3 className="text-2xl font-bold mt-4">
+                Nothing matches your search
               </h3>
-              <p className="text-gray-600">
-                Try adjusting your search or filters
-              </p>
               <button
                 onClick={() => {
                   setSearchTerm("");
                   setSelectedCategory("all");
                 }}
-                className="btn-primary mt-6"
+                className="mt-4 text-orange-500 font-bold underline"
               >
-                Reset Filters
+                Show all food
               </button>
             </div>
-          ) : null}
-        </div>
-      </section>
+          )}
 
-      {/* Special Offers Section */}
-      <section className="bg-gradient-to-r from-secondary to-primary text-white py-16">
-        <div className="container-custom">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Special Offer!
-              </h2>
-              <p className="text-lg mb-6 opacity-90">
-                Get 20% off on your first order with code: FOODHUB20
-              </p>
-              <button
-                onClick={() => {
-                  if (navigator?.clipboard?.writeText) {
-                    navigator.clipboard
-                      .writeText("FOODHUB20")
-                      .then(() => alert("Coupon code copied!"))
-                      .catch(() =>
-                        window.prompt("Copy this code:", "FOODHUB20"),
-                      );
-                  } else {
-                    window.prompt("Copy this code:", "FOODHUB20");
-                  }
-                }}
-                className="bg-white text-primary px-8 py-3 rounded-lg font-bold text-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
-              >
-                Copy Code
-              </button>
+          {/* --- PAGINATION: Floating Style --- */}
+          <div className="mt-12 flex justify-center items-center gap-4">
+            <button
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+              className="w-14 h-14 rounded-2xl bg-white shadow-md flex items-center justify-center font-bold hover:bg-orange-500 hover:text-white transition-all disabled:opacity-20"
+            >
+              ←
+            </button>
+            <div className="bg-white px-6 py-3 rounded-2xl shadow-sm font-bold border border-slate-100">
+              {page} / {totalPages}
             </div>
-            <div className="text-6xl text-center">🎉</div>
+            <button
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              className="w-14 h-14 rounded-2xl bg-white shadow-md flex items-center justify-center font-bold hover:bg-orange-500 hover:text-white transition-all disabled:opacity-20"
+            >
+              →
+            </button>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-16">
+      {/* --- FEATURES: Minimalist --- */}
+      <section className="bg-white py-20 rounded-t-[4rem]">
         <div className="container-custom">
-          <h2 className="section-title">Why Choose Us?</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="card p-6 text-center">
-              <div className="text-5xl mb-4">⚡</div>
-              <h3 className="text-xl font-bold text-dark mb-2">
-                Fast Delivery
-              </h3>
-              <p className="text-gray-600">
-                Get your food delivered hot and fresh within 30 minutes!
-              </p>
-            </div>
-
-            <div className="card p-6 text-center">
-              <div className="text-5xl mb-4">✅</div>
-              <h3 className="text-xl font-bold text-dark mb-2">
-                Quality Assured
-              </h3>
-              <p className="text-gray-600">
-                Every dish is prepared with the finest ingredients
-              </p>
-            </div>
-
-            <div className="card p-6 text-center">
-              <div className="text-5xl mb-4">💰</div>
-              <h3 className="text-xl font-bold text-dark mb-2">Best Prices</h3>
-              <p className="text-gray-600">
-                Enjoy discounts and special offers on bulk orders
-              </p>
-            </div>
+          <div className="grid md:grid-cols-3 gap-12 text-center">
+            {[
+              { e: "🚀", t: "Fastest", d: "30 min delivery" },
+              { e: "💎", t: "Quality", d: "Fresh ingredients" },
+              { e: "👛", t: "Save", d: "Best prices in town" },
+            ].map((f, i) => (
+              <div key={i} className="group cursor-default">
+                <div className="text-6xl mb-4 group-hover:scale-110 transition-transform">
+                  {f.e}
+                </div>
+                <h4 className="text-xl font-black mb-1">{f.t}</h4>
+                <p className="text-slate-500">{f.d}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

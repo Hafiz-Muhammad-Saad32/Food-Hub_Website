@@ -8,18 +8,16 @@ const orderItemSchema = z.object({
 
 // Create Order Validation
 export const createOrderSchema = z.object({
-  items: z
-    .array(orderItemSchema)
-    .min(1, "At least one item is required"),
+  items: z.array(orderItemSchema).min(1, "At least one item is required"),
   address: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid address ID"),
 });
 
 // Update Order Status Validation (Admin only)
 export const updateOrderStatusSchema = z.object({
-  status: z.enum(["pending", "completed", "cancelled"]),
+  status: z.enum(["pending", "preparing", "completed", "cancelled"]).optional(),
 });
 
 // Params validation (order id)
 export const orderParamSchema = z.object({
-  id: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid order ID")
+  id: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid order ID"),
 });

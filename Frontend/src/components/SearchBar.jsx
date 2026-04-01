@@ -15,7 +15,7 @@ export default function SearchBar({ onSearch }) {
   };
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto">
+    <div className="bg-red-400 relative w-full max-w-2xl mx-auto">
       <div className="relative flex items-center">
         {/* Search Icon */}
         <span className="absolute left-4 text-primary text-xl">🔍</span>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { orderAPI, addressAPI } from "../services/api";
+import { MapPin, Phone, Edit3, Trash2, Plus, X } from "lucide-react";
 
 export default function AddressManager({ onAddressSelect, selectedAddressId }) {
   const [addresses, setAddresses] = useState([]);
@@ -13,8 +14,8 @@ export default function AddressManager({ onAddressSelect, selectedAddressId }) {
   });
   const [errors, setErrors] = useState({});
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [serverError, setServerError] = useState(""); // Re-added state from your catch block logic
 
-  // Fetch addresses on mount
   useEffect(() => {
     fetchAddresses();
   }, []);
@@ -26,73 +27,36 @@ export default function AddressManager({ onAddressSelect, selectedAddressId }) {
       setAddresses(response.data.data || []);
     } catch (err) {
       console.error("Error fetching addresses:", err);
-      alert("❌ Error loading addresses. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  // const validateForm = () => {
-  //   const newErrors = {};
-  //   if (!formData.city.trim()) newErrors.city = "City is required";
-  //   if (!formData.street.trim()) newErrors.street = "Street/Address is required";
-  //   if (!formData.phone.trim()) newErrors.phone = "Phone is required";
-  //   else if (!/^\d{10,}$/.test(formData.phone.replace(/\D/g, "")))
-  //     newErrors.phone = "Phone must be at least 10 digits";
-
-  //   setErrors(newErrors);
-  //   return Object.keys(newErrors).length === 0;
-  // };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // if (!validateForm()) {
-    //   alert("❌ Please fill in all required fields correctly.");
-    //   return;
-    // }
-
     setSubmitLoading(true);
     try {
       if (editingId) {
-        // Update
         await addressAPI.updateAddress(editingId, formData);
-        alert("✅ Address updated successfully!");
       } else {
-        // Create
         await addressAPI.createAddress(formData);
-        alert("✅ Address added successfully!");
       }
       resetForm();
       fetchAddresses();
     } catch (err) {
-      // const message = err.response?.error?.message || "Failed to save address.";
-      // setErrors({ api: message });
-      // console.log(errors);
-
       const data = err?.response?.data;
-
-      // 🟥 ZOD ERRORS
       if (data?.error) {
         const fieldErrors = {};
-
         data.error.forEach((err) => {
           const fieldName = err.path[0];
           fieldErrors[fieldName] = err.message;
         });
-
         setErrors(fieldErrors);
         setServerError("");
-        // console.log(errors);
-      }
-
-      // 🟥 SERVER ERROR
-      else if (data?.message) {
+      } else if (data?.message) {
         setServerError(data.message);
         setErrors({});
       }
-      // alert(
-      //   `❌ Error: ${err.response?.data?.message || "Failed to save address"}`
-      // );
     } finally {
       setSubmitLoading(false);
     }
@@ -112,13 +76,9 @@ export default function AddressManager({ onAddressSelect, selectedAddressId }) {
     if (window.confirm("Are you sure you want to delete this address?")) {
       try {
         await addressAPI.deleteAddress(id);
-        alert("✅ Address deleted successfully!");
         fetchAddresses();
       } catch (err) {
         console.error("Error deleting address:", err);
-        alert(
-          `❌ Error: ${err.response?.data?.message || "Failed to delete address"}`,
-        );
       }
     }
   };
@@ -136,145 +96,132 @@ export default function AddressManager({ onAddressSelect, selectedAddressId }) {
 
   if (loading) {
     return (
-      <div className="text-center py-8">
-        <p className="text-gray-600">Loading addresses...</p>
+      <div className="py-6 flex justify-center">
+        <div className="w-6 h-6 border-2 border-orange-100 border-t-orange-500 rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {/* Add/Edit Form Toggle */}
-      <button
-        onClick={() => setShowForm(!showForm)}
-        className="w-full btn-primary text-sm py-2"
-      >
-        {showForm ? "Cancel" : `${editingId ? "Update" : "Add New"} Address`}
-      </button>
+      {/* Action Header */}
+      <div className="flex justify-between items-center px-1">
+        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Saved Addresses</h4>
+        <button
+          onClick={() => (showForm ? resetForm() : setShowForm(true))}
+          className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest transition-colors ${
+            showForm ? "text-rose-500" : "text-orange-500"
+          }`}
+        >
+          {showForm ? <><X size={12}/> Cancel</> : <><Plus size={12}/> Add New</>}
+        </button>
+      </div>
 
-      {/* Form */}
+      {/* Modern Form */}
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className="bg-white p-4 rounded-lg border-2 border-gray-200 space-y-3"
+          className="bg-slate-50 p-5 rounded-[2rem] border border-slate-100 space-y-4 animate-fadeIn"
         >
-          <div>
-            <label className="block text-sm font-medium text-dark mb-1">
-              City *
-            </label>
-            <input
-              type="text"
-              value={formData.city}
-              onChange={(e) =>
-                setFormData({ ...formData, city: e.target.value })
-              }
-              placeholder="Enter city"
-              className="input-field w-full"
-            />
-            {errors.city && (
-              <p className="text-red-500 text-xs mt-1">{errors.city}</p>
-            )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[9px] font-black text-slate-400 uppercase ml-2 mb-1">City</label>
+              <input
+                type="text"
+                value={formData.city}
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                placeholder="New York"
+                className="w-full bg-white border border-slate-100 px-4 py-2.5 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-orange-500/20"
+              />
+              {errors.city && <p className="text-[10px] text-rose-500 font-bold mt-1 ml-2">{errors.city}</p>}
+            </div>
+
+            <div>
+              <label className="block text-[9px] font-black text-slate-400 uppercase ml-2 mb-1">Phone</label>
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="1234567890"
+                className="w-full bg-white border border-slate-100 px-4 py-2.5 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-orange-500/20"
+              />
+              {errors.phone && <p className="text-[10px] text-rose-500 font-bold mt-1 ml-2">{errors.phone}</p>}
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-dark mb-1">
-              Street Address *
-            </label>
+            <label className="block text-[9px] font-black text-slate-400 uppercase ml-2 mb-1">Street Address</label>
             <input
               type="text"
               value={formData.street}
-              onChange={(e) =>
-                setFormData({ ...formData, street: e.target.value })
-              }
-              placeholder="Enter street address"
-              className="input-field w-full"
+              onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+              placeholder="123 Foodie Street"
+              className="w-full bg-white border border-slate-100 px-4 py-2.5 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-orange-500/20"
             />
-            {errors.street && (
-              <p className="text-red-500 text-xs mt-1">{errors.street}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-dark mb-1">
-              Phone *
-            </label>
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) =>
-                setFormData({ ...formData, phone: e.target.value })
-              }
-              placeholder="Enter phone number"
-              className="input-field w-full"
-            />
-            {errors.phone && (
-              <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
-            )}
+            {errors.street && <p className="text-[10px] text-rose-500 font-bold mt-1 ml-2">{errors.street}</p>}
           </div>
 
           <button
             type="submit"
             disabled={submitLoading}
-            className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed py-2"
+            className="w-full bg-slate-900 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-slate-200 hover:bg-orange-500 transition-all disabled:opacity-50"
           >
-            {submitLoading
-              ? "Saving..."
-              : editingId
-                ? "Update Address"
-                : "Save Address"}
+            {submitLoading ? "Processing..." : editingId ? "Update Address" : "Save Address"}
           </button>
         </form>
       )}
 
-      {/* Addresses List */}
-      {addresses.length === 0 ? (
-        <p className="text-gray-600 text-center py-4">
-          No addresses yet. Add one!
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {addresses.map((address) => (
+      {/* Compact Addresses List */}
+      <div className="grid gap-3">
+        {addresses.length === 0 ? (
+          <div className="text-center py-6 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200">
+             <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">No addresses saved</p>
+          </div>
+        ) : (
+          addresses.map((address) => (
             <div
               key={address._id}
               onClick={() => handleSelectAddress(address)}
-              className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+              className={`group relative p-4 rounded-2xl border transition-all cursor-pointer ${
                 selectedAddressId === address._id
-                  ? "border-primary bg-blue-50"
-                  : "border-gray-200 bg-white hover:border-primary"
+                  ? "border-orange-500 bg-orange-50/30"
+                  : "border-slate-100 bg-white hover:border-slate-200"
               }`}
             >
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-bold text-dark">
-                    📍 {address.street}, {address.city}
-                  </p>
-                  <p className="text-sm text-gray-600">📱 {address.phone}</p>
+              <div className="flex justify-between items-center">
+                <div className="flex items-start gap-3">
+                  <div className={`mt-1 p-2 rounded-lg ${selectedAddressId === address._id ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                    <MapPin size={14} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-slate-900 leading-tight">
+                      {address.street}, {address.city}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-1 text-[10px] font-bold text-slate-400">
+                      <Phone size={10} /> {address.phone}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex gap-2">
+
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEdit(address);
-                    }}
-                    className="text-blue-500 hover:text-blue-700 font-medium text-sm"
+                    onClick={(e) => { e.stopPropagation(); handleEdit(address); }}
+                    className="p-2 text-slate-400 hover:text-blue-500 transition-colors"
                   >
-                    Edit
+                    <Edit3 size={14} />
                   </button>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(address._id);
-                    }}
-                    className="text-red-500 hover:text-red-700 font-medium text-sm"
+                    onClick={(e) => { e.stopPropagation(); handleDelete(address._id); }}
+                    className="p-2 text-slate-400 hover:text-rose-500 transition-colors"
                   >
-                    Delete
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 }

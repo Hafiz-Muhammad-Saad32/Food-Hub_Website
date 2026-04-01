@@ -8,4 +8,5 @@ export interface UserTypes extends Document {
   phone: string;
   role: Role;
   experience: number;
+  isVerified: Boolean;
 }

@@ -1,8 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import AdminRoute from "./auth/AdminRoute";
+// import AdminRoute from "./auth/AdminRoute";
+import { useToast } from "./context/ToastContext";
 
 // Components
 import Navbar from "./components/Navbar";
@@ -17,20 +18,28 @@ import Contact from "./pages/Contact";
 import Login from "./auth/Login";
 import Signup from "./auth/Signup";
 import ForgotPassword from "./auth/ForgotPassword";
-import { cartAPI } from "./services/api";
 
 // Cart & Admin
 import Cart from "./cart/Cart";
 import FoodForm from "./admin/FoodForm";
 import AdminLogin from "./auth/AdminLogin";
 import ProtectedRoute from "./auth/ProtectedRoute";
+import OrderPage from "./pages/OrderPage";
+import AdminNavbar from "./admin/AdminNavbar";
+import AdminOrders from "./admin/AdminOrders";
+import AdminUsers from "./admin/AdminUsers";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 
 function App() {
+  const showToast = useToast();
+  window.addEventListener("beforeunload", () => {
+    localStorage.clear(); // 🔥 clears everything
+  });
+
   const navigate = useNavigate();
   // Global state for cart items and foods (backend-ready)
   const [cartItems, setCartItems] = useState([]);
   const [foods, setFoods] = useState([]);
-  const [cartCount, setCartCount] = useState(0);
 
   // const [user, setUser] = useState(() => {
   //   try {
@@ -41,60 +50,33 @@ function App() {
   //     return null;
   //   }
   // });
-  const [user, setUser] = useState(() => {
-    try {
-      const storedUser = localStorage.getItem("user");
-      return storedUser ? JSON.parse(storedUser) : null;
-    } catch (error) {
-      console.error("Failed to parse user from localStorage:", error);
-      return null;
-    }
-  });
+  const [user, setUser] = useState();
 
   const handleLogin = (userData) => {
     localStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
+    showToast(`Welcome back, Great to see you again!`, "success");
   };
+
+  // console.log(user);
 
   const handleLogout = () => {
     // Clear auth info
     localStorage.removeItem("authToken");
     localStorage.removeItem("user");
     setCartItems([]);
-    setCartCount(0);
     setUser(null);
     navigate("/");
+    showToast("Logged out successfully. See you soon!", "success");
   };
-
-  const refreshCartCount = async () => {
-    const token = localStorage.getItem("authToken");
-    if (!token) {
-      setCartCount(0);
-      return;
-    }
-    try {
-      const response = await cartAPI.getCart();
-      const items = response?.data?.data?.items || [];
-      const count = items.reduce((sum, item) => sum + item.quantity, 0);
-      setCartCount(count);
-    } catch (err) {
-      console.error("Failed to refresh cart count:", err);
-    }
-  };
-
-  useEffect(() => {
-    refreshCartCount();
-  }, [user]);
 
   // Function to add item to cart
   const addToCart = (food) => {
-    const existingItem = cartItems.find((item) => item._id === food._id);
+    const existingItem = cartItems.find((item) => item.id === food.id);
     if (existingItem) {
       setCartItems(
         cartItems.map((item) =>
-          item._id === food._id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item,
+          item.id === food.id ? { ...item, quantity: item.quantity + 1 } : item,
         ),
       );
     } else {
@@ -104,7 +86,7 @@ function App() {
 
   // Function to remove item from cart
   const removeFromCart = (foodId) => {
-    setCartItems(cartItems.filter((item) => item._id !== foodId));
+    setCartItems(cartItems.filter((item) => item.id !== foodId));
   };
 
   // Function to update item quantity in cart
@@ -115,7 +97,7 @@ function App() {
     }
     setCartItems(
       cartItems.map((item) =>
-        item._id === foodId ? { ...item, quantity } : item,
+        item.id === foodId ? { ...item, quantity } : item,
       ),
     );
   };
@@ -127,25 +109,39 @@ function App() {
 
   return (
     <div className="flex flex-col min-h-screen bg-light">
-      <Navbar
-        cartCount={cartCount}
-        user={user}
-        handleLogout={handleLogout}
-      />
+      {user?.role === "admin" ? (
+        <AdminNavbar user={user} handleLogout={handleLogout} />
+      ) : (
+        <Navbar
+          cartCount={cartItems.length}
+          user={user}
+          handleLogout={handleLogout}
+        />
+      )}
 
       <main className="flex-grow">
         <Routes>
           {/* Public Routes */}
           <Route
             path="/"
-            element={<Home onCartChanged={refreshCartCount} user={user} />}
+            element={<Home addToCart={addToCart} user={user} />}
           />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/admin" element={<AdminLogin />} />
+
+          <Route
+            path="/order"
+            element={
+              <ProtectedRoute>
+                <OrderPage />
+              </ProtectedRoute>
+            }
+          />
+
 
           {/* Auth Routes */}
           <Route path="/login" element={<Login handleLogin={handleLogin} />} />
+          <Route path="/verify-email/:token" element={<VerifyEmailPage/>} />
           <Route
             path="/signup"
             element={<Signup handleLogin={handleLogin} />}
@@ -157,7 +153,13 @@ function App() {
             path="/cart"
             element={
               <ProtectedRoute>
-                <Cart />
+                <Cart
+                  foods={foods}
+                  cartItems={cartItems}
+                  removeFromCart={removeFromCart}
+                  updateCartQuantity={updateCartQuantity}
+                  clearCart={clearCart}
+                />
               </ProtectedRoute>
             }
           />
@@ -166,10 +168,30 @@ function App() {
           <Route
             path="/admin/foods"
             element={
-              <AdminRoute>
+              <ProtectedRoute>
                 <FoodForm foods={foods} setFoods={setFoods} />
-              </AdminRoute>
+              </ProtectedRoute>
             }
+          />
+          <Route
+            path="/admin/orders"
+            element={
+              <ProtectedRoute>
+                <AdminOrders />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <AdminUsers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={<AdminLogin handleLogin={handleLogin} />}
           />
         </Routes>
       </main>
@@ -180,4 +202,3 @@ function App() {
 }
 
 export default App;
-

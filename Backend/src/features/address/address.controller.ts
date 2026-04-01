@@ -5,7 +5,6 @@ import {
   updateAddressSchema,
   addressParamSchema,
 } from "./address.validation";
-import { log } from "console";
 
 // CREATE ADDRESS
 export const createAddress = async (req: Request, res: Response) => {
@@ -19,16 +18,9 @@ export const createAddress = async (req: Request, res: Response) => {
   }
 
   try {
-    const userId = (req as any).user?._id;
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-    }
     const address = await addressService.createAddress({
       ...data, 
-      user: userId,
+      user: (req as any).user?._id,
     });
 
     return res.status(201).json({
@@ -46,17 +38,10 @@ export const createAddress = async (req: Request, res: Response) => {
   }
 };
 
-// GET ALL USER ADDRESSES (for regular users)
+//* GET ALL USER ADDRESSES (for regular users)
 export const getAllUserAddress = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?._id;
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-    }
-    const addresses = await addressService.getUserAddresses(userId);
+    const addresses = await addressService.getUserAddresses((req as any).user?._id);
 
     if (addresses.length === 0) {
       return res.status(200).json({
@@ -81,7 +66,7 @@ export const getAllUserAddress = async (req: Request, res: Response) => {
   }
 };
 
-// GET ADDRESS BY ID
+//* GET ADDRESS BY ID
 export const getAddressById = async (req: Request, res: Response) => {
   const parsed = addressParamSchema.safeParse(req.params);
 
@@ -93,16 +78,9 @@ export const getAddressById = async (req: Request, res: Response) => {
   }
 
   try {
-    const userId = (req as any).user?._id;
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-    }
     const address = await addressService.getAddressById(parsed.data.id);
 
-    console.log(parsed.data.id);
+    // console.log(parsed.data.id);
     
 
     if (!address) {
@@ -112,8 +90,7 @@ export const getAddressById = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if address belongs to current user
-    if (address.user.toString() !== userId) {
+    if (address.user.toString() !== (req as any).user?._id) {
       return res.status(403).json({
         success: false,
         message: "Unauthorized access",
@@ -135,7 +112,7 @@ export const getAddressById = async (req: Request, res: Response) => {
   }
 };
 
-// UPDATE ADDRESS
+//* UPDATE ADDRESS
 export const updateAddress = async (req: Request, res: Response) => {
   const paramParsed = addressParamSchema.safeParse(req.params);
   const bodyParsed = updateAddressSchema.safeParse(req.body);
@@ -148,13 +125,6 @@ export const updateAddress = async (req: Request, res: Response) => {
   }
 
   try {
-    const userId = (req as any).user?._id;
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-    }
     const address = await addressService.getAddressById(paramParsed.data.id);
 
     if (!address) {
@@ -164,7 +134,7 @@ export const updateAddress = async (req: Request, res: Response) => {
       });
     }
 
-    if (address.user.toString() !== userId) {
+    if (address.user.toString() !== (req as any).user?._id) {
       return res.status(403).json({
         success: false,
         message: "Unauthorized access",
@@ -190,7 +160,7 @@ export const updateAddress = async (req: Request, res: Response) => {
   }
 };
 
-// DELETE ADDRESS (SOFT DELETE)
+//* DELETE ADDRESS (SOFT DELETE)
 export const deleteAddress = async (req: Request, res: Response) => {
   const parsed = addressParamSchema.safeParse(req.params);
 
@@ -202,13 +172,6 @@ export const deleteAddress = async (req: Request, res: Response) => {
   }
 
   try {
-    const userId = (req as any).user?._id;
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-    }
     const address = await addressService.getAddressById(parsed.data.id);
 
     if (!address) {
@@ -218,7 +181,7 @@ export const deleteAddress = async (req: Request, res: Response) => {
       });
     }
 
-    if (address.user.toString() !== userId) {
+    if (address.user.toString() !== (req as any).user?._id) {
       return res.status(403).json({
         success: false,
         message: "Unauthorized access",

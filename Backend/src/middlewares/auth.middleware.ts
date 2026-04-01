@@ -17,7 +17,7 @@ export function checkJWT(req: AuthRequest, res: Response, next: NextFunction) {
 
     req.user = decoded;
 
-    console.log("backend req.user ",req.user);
+    // console.log("backend req.user ",req.user);
     
 
     next();

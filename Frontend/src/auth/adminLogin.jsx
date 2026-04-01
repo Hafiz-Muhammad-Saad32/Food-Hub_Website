@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
+// import { jwtDecode } from "jwt-decode";
 
 // import api from "../api/axios";
 import { apiClient } from "../services/api";
@@ -13,7 +13,7 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 
-export default function AdminLogin() {
+export default function AdminLogin({ handleLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
@@ -69,22 +69,23 @@ export default function AdminLogin() {
         email,
         password,
       });
-      const { accessToken } = response.data;
+      // const { accessToken } = response.data;
 
-      console.log(response.data);
+      // console.log(response.data.user);
 
-      const decoded = jwtDecode(accessToken);
-      console.log(decoded);
+      // const decoded = jwtDecode(accessToken);
+      // console.log(decoded);
 
-      if (decoded.role !== "admin") {
-        setErrors({
-          api: "Access Denied: You do not have administrative privileges.",
-        });
-        return;
-      }
+      // if (decoded.role !== "admin") {
+      //   setErrors({
+      //     api: "Access Denied: You do not have administrative privileges.",
+      //   });
+      //   return;
+      // }
 
-      localStorage.setItem("authToken", accessToken);
-      localStorage.setItem("userRole", decoded.role);
+      localStorage.setItem("authToken", response.data.accessToken);
+      // localStorage.setItem("userRole", decoded.role);
+      handleLogin(response.data.user); // update App state
 
       navigate("/admin/foods");
     } catch (error) {
